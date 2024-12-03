@@ -1,8 +1,5 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::cmp::max;
-use std::cmp::min;
-use std::collections::HashMap;
 
 pub struct Part1;
 
@@ -43,7 +40,7 @@ impl Part<usize> for Part2 {
                         .cloned()
                         .collect::<Vec<_>>();
 
-                    if (is_safe(&iter)) {
+                    if is_safe(&iter) {
                         return true;
                     }
                 }
