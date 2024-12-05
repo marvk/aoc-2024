@@ -1,6 +1,5 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
 pub struct Part1;
@@ -33,81 +32,51 @@ impl Part<u32> for Part2 {
     fn solve(&self, input: &[String]) -> u32 {
         let (rules, changes) = parse(input);
 
-        let rules = vec![
-            Rule {
-                first: 1,
-                second: 2,
-            },
-            Rule {
-                first: 1,
-                second: 3,
-            },
-            Rule {
-                first: 3,
-                second: 4,
-            },
-        ];
-        let changes: Vec<Change> = vec![vec![3, 2, 4, 1].into()];
+        // let rules = vec![
+        //     Rule {
+        //         first: 1,
+        //         second: 2,
+        //     },
+        //     Rule {
+        //         first: 1,
+        //         second: 3,
+        //     },
+        //     Rule {
+        //         first: 3,
+        //         second: 4,
+        //     },
+        // ];
+        // let changes: Vec<Change> = vec![vec![3, 2, 4, 1].into()];
 
         let (_, incorrect) = partition(changes, &rules);
 
-        let get_rule = |a, b| {
-            rules
-                .iter()
-                .find(|r| (r.first == a && r.second == b) || r.first == b && r.second == a)
-        };
+        let mut sum = 0;
 
-        let failed_sorted = incorrect
-            .iter()
-            .map(|c| c.values.clone())
-            .map(|mut e| {
-                for i in 0..10 {
-                    e.sort_by(|&a, &b| {
-                        println!("{}", a);
-                        println!("{}", b);
+        for x in incorrect {
+            let mut vec1 = x.values;
 
-                        let rule = get_rule(a, b);
-                        println!("{:?}", rule);
+            loop {
+                let mut swap = false;
+                for rule in &rules {
+                    let first_index = vec1.iter().position(|&e| e == rule.first);
+                    let second_index = vec1.iter().position(|&e| e == rule.second);
 
-                        if let Some(rule) = get_rule(a, b) {
-                            let result = if a == rule.first {
-                                println!("{}<>{}", a, b);
-                                a.cmp(&b)
-                            } else {
-                                println!("{}<>{}", b, a);
-                                b.cmp(&a)
-                            };
-                            println!("{:?}", result);
-                            result
-                        } else {
-                            Ordering::Equal
+                    if let (Some(first_index), Some(second_index)) = (first_index, second_index) {
+                        if first_index > second_index {
+                            vec1.swap(first_index, second_index);
+                            swap = true
                         }
-                    });
+                    }
                 }
+                if !swap {
+                    break;
+                }
+            }
 
-                println!();
-                println!("{:?}", e);
-                println!();
-                println!();
-                println!();
+            sum += vec1[vec1.len() / 2];
+        }
 
-                e
-            })
-            .collect::<Vec<_>>();
-
-        let vec = failed_sorted
-            .into_iter()
-            .map(|e| e.into())
-            .collect::<Vec<Change>>();
-
-        let (correct, incorrect) = partition(vec, &rules);
-
-        println!("{}", correct.len());
-        println!("{}", incorrect.len());
-
-        todo!()
-
-        // failed_sorted.into_iter().map(|v| v[v.len() / 2]).sum()
+        sum
     }
 }
 
