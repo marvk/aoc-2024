@@ -8,8 +8,8 @@ use std::time::Duration;
 use crate::day01::day01;
 use crate::day02::day02;
 use crate::day03::day03;
-// use crate::day04::day04;
-// use crate::day05::day05;
+use crate::day04::day04;
+use crate::day05::day05;
 // use crate::day06::day06;
 // use crate::day07::day07;
 // use crate::day08::day08;
@@ -31,12 +31,12 @@ use crate::day03::day03;
 // use crate::day24::day24;
 // use crate::day25::day25;
 
-mod harness;
 mod day01;
 mod day02;
 mod day03;
-// mod day04;
-// mod day05;
+mod day04;
+mod day05;
+mod harness;
 // mod day06;
 // mod day07;
 // mod day08;
@@ -60,11 +60,11 @@ mod day03;
 
 fn main() {
     let days = vec![
-        day01().f(),
-        day02().f(),
-        day03().f(),
+        // day01().f(),
+        // day02().f(),
+        // day03().f(),
         // day04().f(),
-        // day05().f(),
+        day05().f(),
         // day06().f(),
         // day07().f(),
         // day08().f(),
@@ -104,17 +104,29 @@ fn main() {
                 run_one(id);
             } else {
                 match arg.as_str() {
-                    "all" => { run_all(); }
-                    _ => { run_latest(); }
+                    "all" => {
+                        run_all();
+                    }
+                    _ => {
+                        run_latest();
+                    }
                 }
             }
         }
-        None => { run_latest(); }
+        None => {
+            run_latest();
+        }
     };
 }
 
 fn plot(part1: Vec<Duration>, part2: Vec<Duration>) -> Result<(), Error> {
-    let convert = |v: Vec<Duration>| v.into_iter().map(|d| d.as_micros()).map(|n| n.to_string()).collect::<Vec<_>>().join("#");
+    let convert = |v: Vec<Duration>| {
+        v.into_iter()
+            .map(|d| d.as_micros())
+            .map(|n| n.to_string())
+            .collect::<Vec<_>>()
+            .join("#")
+    };
 
     // Lol just plot with kotlin who's gonna stop me???
     Command::new("java")
