@@ -32,51 +32,17 @@ impl Part<u32> for Part2 {
     fn solve(&self, input: &[String]) -> u32 {
         let (rules, changes) = parse(input);
 
-        // let rules = vec![
-        //     Rule {
-        //         first: 1,
-        //         second: 2,
-        //     },
-        //     Rule {
-        //         first: 1,
-        //         second: 3,
-        //     },
-        //     Rule {
-        //         first: 3,
-        //         second: 4,
-        //     },
-        // ];
-        // let changes: Vec<Change> = vec![vec![3, 2, 4, 1].into()];
-
         let (_, incorrect) = partition(changes, &rules);
 
-        let mut sum = 0;
-
-        for x in incorrect {
-            let mut vec1 = x.values;
-
-            loop {
-                let mut swap = false;
-                for rule in &rules {
-                    let first_index = vec1.iter().position(|&e| e == rule.first);
-                    let second_index = vec1.iter().position(|&e| e == rule.second);
-
-                    if let (Some(first_index), Some(second_index)) = (first_index, second_index) {
-                        if first_index > second_index {
-                            vec1.swap(first_index, second_index);
-                            swap = true
-                        }
-                    }
-                }
-                if !swap {
-                    break;
-                }
-            }
-
-            sum += vec1[vec1.len() / 2];
-        }
-
-        sum
+        incorrect
+            .into_iter()
+            .map(|e| e.values)
+            .map(|mut e| {
+                fix(&mut e, &rules);
+                e
+            })
+            .map(|e| mid(&e))
+            .sum()
     }
 }
 
@@ -118,18 +84,17 @@ struct Change {
 
 impl From<&str> for Change {
     fn from(value: &str) -> Self {
-        let values = value
+        value
             .split(",")
             .flat_map(|e| e.parse::<u32>())
-            .collect::<Vec<_>>();
-
-        values.into()
+            .collect::<Vec<_>>()
+            .into()
     }
 }
 
 impl From<Vec<u32>> for Change {
     fn from(value: Vec<u32>) -> Self {
-        let center = value[value.len() / 2];
+        let center = mid(&value);
 
         let pages = value
             .iter()
@@ -156,6 +121,7 @@ fn parse(input: &[String]) -> (Vec<Rule>, Vec<Change>) {
         .iter()
         .map(|e| Change::from(e.as_str()))
         .collect::<Vec<_>>();
+
     (rules, changes)
 }
 
@@ -163,4 +129,28 @@ fn partition(changes: Vec<Change>, rules: &[Rule]) -> (Vec<Change>, Vec<Change>)
     changes
         .into_iter()
         .partition(|c| rules.iter().all(|r| r.check(c)))
+}
+
+fn fix(vec1: &mut [u32], rules: &Vec<Rule>) {
+    loop {
+        let mut swap = false;
+        for rule in rules {
+            let first_index = vec1.iter().position(|&e| e == rule.first);
+            let second_index = vec1.iter().position(|&e| e == rule.second);
+
+            if let (Some(first_index), Some(second_index)) = (first_index, second_index) {
+                if first_index > second_index {
+                    vec1.swap(first_index, second_index);
+                    swap = true
+                }
+            }
+        }
+        if !swap {
+            break;
+        }
+    }
+}
+
+fn mid(slice: &[u32]) -> u32 {
+    slice[slice.len() / 2]
 }

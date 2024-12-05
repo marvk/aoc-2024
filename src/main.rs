@@ -60,10 +60,10 @@ mod harness;
 
 fn main() {
     let days = vec![
-        // day01().f(),
-        // day02().f(),
-        // day03().f(),
-        // day04().f(),
+        day01().f(),
+        day02().f(),
+        day03().f(),
+        day04().f(),
         day05().f(),
         // day06().f(),
         // day07().f(),
