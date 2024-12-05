@@ -27,13 +27,13 @@ impl<T: Part<R> + ?Sized, R: AocResult> Run<R> for T {
         let (actual, duration) = timed(|| { self.solve(input) });
         let expected = self.expect_test();
         assert_eq!(actual, expected, "Part {} test failed after {:?}: Expected {:?} but got {:?}", id, duration, expected, actual);
-        println!("Part {} test was {} {:>10}", id, "successful".on_bright_green(), format!("{:?}", duration).purple());
+        println!("{}", format!("Part {} test was {} {:>10}", id, "successful".green(), format!("{:?}", duration).purple()).bright_yellow());
         duration
     }
 
     fn run_actual(&self, id: u8, input: &[String]) -> Duration {
         let (actual, duration) = timed(|| { self.solve(input) });
-        println!("{}", format!("Part {} output {:>12} {:>10}", id, format!("{:?}", actual).blue(), format!("{:?}", duration).purple()).on_blue());
+        println!("{}", format!("Part {} output {:>12} {:>10}", id, format!("{:?}", actual).blue(), format!("{:?}", duration).purple()));
         duration
     }
 
