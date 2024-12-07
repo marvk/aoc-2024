@@ -17,7 +17,7 @@ impl Part<i32> for Part1 {
     fn solve(&self, input: &[String]) -> i32 {
         let map = Map::from(input);
 
-        let visited = do_the_thing(map);
+        let visited = do_the_thing(&map);
 
         visited
             .0
@@ -36,26 +36,39 @@ impl Part<i32> for Part2 {
     }
 
     fn solve(&self, input: &[String]) -> i32 {
-        let map = Map::from(input);
+        let mut map = Map::from(input);
 
         let mut result = 0;
 
-        for y in 0..map.raw.len() {
-            for x in 0..map.raw[0].len() {
-                if v(x as i32, y as i32) == map.start_position {
-                    continue
-                }
-                
-                let mut current = map.clone();
+        let set = do_the_thing(&map)
+            .0
+            .iter()
+            .map(|(e, _)| *e)
+            .collect::<HashSet<_>>();
 
-                current.raw[y][x] = Tile::Obstacle;
-
-                if let (_, ExitStatus::Looped) = do_the_thing(current) {
-                    result += 1;
-                }
+        for vec in set {
+            if vec == map.start_position {
+                continue;
             }
+
+            let x = vec.x as usize;
+            let y = vec.y as usize;
+
+            let saved = map.raw[y][x];
+
+            if matches!(saved, Tile::Obstacle) {
+                continue;
+            }
+
+            map.raw[y][x] = Tile::Obstacle;
+
+            if let ExitStatus::Looped = do_the_thing2(&map) {
+                result += 1;
+            }
+
+            map.raw[y][x] = saved;
         }
-        
+
         result
     }
 }
@@ -136,24 +149,9 @@ struct Vec2 {
 
 impl Vec2 {
     pub const NORTH: Self = v(0, -1);
-    pub const NORTH_EAST: Self = v(1, -1);
     pub const EAST: Self = v(1, 0);
-    pub const SOUTH_EAST: Self = v(1, 1);
     pub const SOUTH: Self = v(0, 1);
-    pub const SOUTH_WEST: Self = v(-1, 1);
     pub const WEST: Self = v(-1, 0);
-    pub const NORTH_WEST: Self = v(-1, -1);
-
-    pub const DIRECTIONS: [Self; 8] = [
-        Self::NORTH,
-        Self::NORTH_EAST,
-        Self::EAST,
-        Self::SOUTH_EAST,
-        Self::SOUTH,
-        Self::SOUTH_WEST,
-        Self::WEST,
-        Self::NORTH_WEST,
-    ];
 
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
@@ -184,7 +182,7 @@ impl Mul<i32> for Vec2 {
     }
 }
 
-fn do_the_thing(map: Map) -> (HashSet<(Vec2, Vec2)>, ExitStatus) {
+fn do_the_thing(map: &Map) -> (HashSet<(Vec2, Vec2)>, ExitStatus) {
     let mut visited = HashSet::new();
 
     let mut current = map.start_position;
@@ -216,6 +214,33 @@ fn do_the_thing(map: Map) -> (HashSet<(Vec2, Vec2)>, ExitStatus) {
             }
         }
     }
+}
+
+fn do_the_thing2(map: &Map) -> ExitStatus {
+    let mut current = map.start_position;
+    let mut direction = Vec2::NORTH;
+
+    for _ in 0..7000 {
+        let next = current + direction;
+
+        match map.get(next) {
+            Some(Tile::Empty) => {
+                current = next;
+            }
+            None => return ExitStatus::Exited,
+            _ => {
+                direction = match direction {
+                    Vec2::NORTH => Vec2::EAST,
+                    Vec2::EAST => Vec2::SOUTH,
+                    Vec2::SOUTH => Vec2::WEST,
+                    Vec2::WEST => Vec2::NORTH,
+                    _ => panic!(),
+                }
+            }
+        }
+    }
+
+    ExitStatus::Looped
 }
 
 enum ExitStatus {
