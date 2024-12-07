@@ -68,8 +68,6 @@ pub struct Day<R1: AocResult, R2: AocResult> {
 
 impl<R1: AocResult + 'static, R2: AocResult + 'static> Day<R1, R2> {
     pub fn new(id: u8, part1: Box<dyn Part<R1>>, part2: Box<dyn Part<R2>>) -> Self {
-        println!("{}", id);
-        
         Self {
             id,
             test_input1: Self::read_test_input(id, 1),

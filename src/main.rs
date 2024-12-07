@@ -11,7 +11,7 @@ use crate::day03::day03;
 use crate::day04::day04;
 use crate::day05::day05;
 use crate::day06::day06;
-// use crate::day07::day07;
+use crate::day07::day07;
 // use crate::day08::day08;
 // use crate::day09::day09;
 // use crate::day10::day10;
@@ -31,14 +31,13 @@ use crate::day06::day06;
 // use crate::day24::day24;
 // use crate::day25::day25;
 
-mod harness;
 mod day01;
 mod day02;
 mod day03;
 mod day04;
 mod day05;
 mod day06;
-// mod day07;
+mod day07;
 // mod day08;
 // mod day09;
 // mod day10;
@@ -57,34 +56,17 @@ mod day06;
 // mod day23;
 // mod day24;
 // mod day25;
+mod harness;
 
 fn main() {
-    let days = vec![
+    let days = [
         day01().f(),
         day02().f(),
         day03().f(),
         day04().f(),
         day05().f(),
         day06().f(),
-        // day07().f(),
-        // day08().f(),
-        // day09().f(),
-        // day10().f(),
-        // day11().f(),
-        // day12().f(),
-        // day13().f(),
-        // day14().f(),
-        // day15().f(),
-        // day16().f(),
-        // day17().f(),
-        // day18().f(),
-        // day19().f(),
-        // day20().f(),
-        // day21().f(),
-        // day22().f(),
-        // day23().f(),
-        // day24().f(),
-        // day25().f(),
+        day07().f(),
     ];
 
     let run_one = |id: usize| (days[id - 1].f)();
