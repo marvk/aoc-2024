@@ -12,7 +12,7 @@ use crate::day04::day04;
 use crate::day05::day05;
 use crate::day06::day06;
 use crate::day07::day07;
-// use crate::day08::day08;
+use crate::day08::day08;
 // use crate::day09::day09;
 // use crate::day10::day10;
 // use crate::day11::day11;
@@ -38,7 +38,7 @@ mod day04;
 mod day05;
 mod day06;
 mod day07;
-// mod day08;
+mod day08;
 // mod day09;
 // mod day10;
 // mod day11;
@@ -67,6 +67,7 @@ fn main() {
         day05().f(),
         day06().f(),
         day07().f(),
+        day08().f(),
     ];
 
     let run_one = |id: usize| (days[id - 1].f)();
@@ -111,7 +112,7 @@ fn plot(part1: Vec<Duration>, part2: Vec<Duration>) -> Result<(), Error> {
     };
 
     // Lol just plot with kotlin who's gonna stop me???
-    Command::new("java")
+    Command::new("C:\\Users\\Marvin\\.gradle\\jdks\\eclipse_adoptium-18-amd64-windows\\jdk-18.0.2.1+1\\bin\\java.exe")
         .arg("-jar")
         .arg("plotter.jar")
         .arg(&convert(part1))
