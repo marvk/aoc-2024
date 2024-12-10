@@ -1,6 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::ops::{Add, Mul, Neg, Sub};
 pub struct Part1;
 
@@ -19,23 +19,22 @@ impl Part<i32> for Part1 {
         let mut result = 0;
 
         for &trailhead in &input.trailheads {
-            let mut visited = HashSet::new();
+            let mut visited = vec![vec![u8::MAX; input.width()]; input.height()];
+
             let mut queue = VecDeque::from(vec![trailhead]);
 
             while let Some(current) = queue.pop_back() {
-                if visited.contains(&current) {
-                    continue;
-                }
-
                 let current_value = input.get(current).unwrap();
 
-                visited.insert(current);
+                visited[current.y as usize][current.x as usize] = current_value;
 
                 for direction in Vec2::CARDINAL_DIRECTIONS {
                     let next = current + direction;
 
                     if let Some(next_value) = input.get(next) {
-                        if !visited.contains(&next) && next_value == current_value + 1 {
+                        if next_value == current_value + 1
+                            && visited[next.y as usize][next.x as usize] == u8::MAX
+                        {
                             queue.push_back(next);
                         }
                     }
@@ -44,8 +43,8 @@ impl Part<i32> for Part1 {
 
             result += visited
                 .into_iter()
-                .filter(|&e| input.get(e).unwrap() == 9)
-                .count();
+                .map(|vec| vec.into_iter().filter(|&e| e == 9).count())
+                .sum::<usize>()
         }
 
         result as i32
@@ -127,6 +126,14 @@ impl Input {
             .get(v.y as usize)
             .and_then(|e| e.get(v.x as usize))
             .cloned()
+    }
+
+    fn width(&self) -> usize {
+        self.map[0].len()
+    }
+
+    fn height(&self) -> usize {
+        self.map.len()
     }
 }
 
