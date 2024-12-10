@@ -14,7 +14,7 @@ use crate::day06::day06;
 use crate::day07::day07;
 use crate::day08::day08;
 use crate::day09::day09;
-// use crate::day10::day10;
+use crate::day10::day10;
 // use crate::day11::day11;
 // use crate::day12::day12;
 // use crate::day13::day13;
@@ -40,7 +40,7 @@ mod day06;
 mod day07;
 mod day08;
 mod day09;
-// mod day10;
+mod day10;
 // mod day11;
 // mod day12;
 // mod day13;
@@ -69,6 +69,7 @@ fn main() {
         day07().f(),
         day08().f(),
         day09().f(),
+        day10().f(),
     ];
 
     let run_one = |id: usize| (days[id - 1].f)();
