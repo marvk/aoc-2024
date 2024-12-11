@@ -15,13 +15,7 @@ impl Part<usize> for Part1 {
     }
 
     fn solve(&self, input: &[String]) -> usize {
-        let mut input = Input::from(input[0].as_str());
-
-        for _ in 0..25 {
-            input.iterate_once();
-        }
-
-        input.map.into_values().sum()
+        solve(input, 25)
     }
 }
 
@@ -33,14 +27,18 @@ impl Part<usize> for Part2 {
     }
 
     fn solve(&self, input: &[String]) -> usize {
-        let mut input = Input::from(input[0].as_str());
-
-        for _ in 0..75 {
-            input.iterate_once();
-        }
-
-        input.map.into_values().sum()
+        solve(input, 75)
     }
+}
+
+fn solve(input: &[String], i: usize) -> usize {
+    let mut input = Input::from(input[0].as_str());
+
+    for _ in 0..i {
+        input.iterate_once();
+    }
+
+    input.map.into_values().sum()
 }
 
 #[derive(Debug)]
@@ -54,8 +52,7 @@ impl From<&str> for Input {
         let map = value.split(" ").map(|e| e.parse::<u64>().unwrap()).fold(
             HashMap::new(),
             |mut acc, e| {
-                let vec = acc.entry(e).or_insert(0);
-                *vec += 1;
+                *acc.entry(e).or_insert(0) += 1;
                 acc
             },
         );
