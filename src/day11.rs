@@ -1,6 +1,8 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use std::collections::HashMap;
+use std::mem::swap;
+
 pub struct Part1;
 
 pub fn day11() -> Day<usize, usize> {
@@ -44,6 +46,7 @@ impl Part<usize> for Part2 {
 #[derive(Debug)]
 struct Input {
     map: HashMap<u64, usize>,
+    next_map: HashMap<u64, usize>,
 }
 
 impl From<&str> for Input {
@@ -57,32 +60,39 @@ impl From<&str> for Input {
             },
         );
 
-        Self { map }
+        Self {
+            map,
+            next_map: HashMap::new(),
+        }
     }
 }
 
 impl Input {
     fn iterate_once(&mut self) {
-        let mut new_map = HashMap::new();
+        self.next_map.clear();
+
+        #[inline(always)]
+        fn insert(map: &mut HashMap<u64, usize>, num: u64, count: usize) {
+            *map.entry(num).or_insert(0) += count;
+        }
 
         for (&num, &count) in &self.map {
-            let new_nums = if num == 0 {
-                vec![1_u64]
-            } else if num.to_string().len() % 2 == 0 {
-                let s = num.to_string();
-                vec![
-                    s[0..s.len() / 2].parse().unwrap(),
-                    s[s.len() / 2..s.len()].parse().unwrap(),
-                ]
+            if num == 0 {
+                insert(&mut self.next_map, 1, count);
             } else {
-                vec![num * 2024]
-            };
+                let digits = num.ilog10() + 1;
 
-            for new_num in new_nums {
-                *new_map.entry(new_num).or_insert(0) += count;
+                if digits % 2 == 0 {
+                    let divisor = 10_u64.pow(digits / 2);
+
+                    insert(&mut self.next_map, num / divisor, count);
+                    insert(&mut self.next_map, num % divisor, count);
+                } else {
+                    insert(&mut self.next_map, num * 2024, count);
+                }
             }
         }
 
-        self.map = new_map;
+        swap(&mut self.map, &mut self.next_map)
     }
 }

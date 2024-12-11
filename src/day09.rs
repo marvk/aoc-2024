@@ -1,7 +1,6 @@
 use crate::day09::Block::{Data, Empty};
 use crate::harness::Day;
 use crate::harness::Part;
-use std::fs;
 
 pub struct Part1;
 
