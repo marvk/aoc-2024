@@ -1,6 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::collections::VecDeque;
+use std::collections::HashSet;
 use std::ops::{Add, Mul, Neg, Sub};
 pub struct Part1;
 
@@ -19,35 +19,33 @@ impl Part<i32> for Part1 {
         let mut result = 0;
 
         for &trailhead in &input.trailheads {
-            let mut visited = vec![vec![u8::MAX; input.width()]; input.height()];
+            let mut visited = HashSet::with_capacity(input.width() * input.height());
 
-            let mut queue = VecDeque::from(vec![trailhead]);
+            let mut queue = vec![trailhead];
 
-            while let Some(current) = queue.pop_back() {
+            while let Some(current) = queue.pop() {
                 let current_value = input.get(current).unwrap();
 
-                visited[current.y as usize][current.x as usize] = current_value;
+                visited.insert(current);
+
+                if current_value == 9 {
+                    result += 1;
+                    continue;
+                }
 
                 for direction in Vec2::CARDINAL_DIRECTIONS {
                     let next = current + direction;
 
                     if let Some(next_value) = input.get(next) {
-                        if next_value == current_value + 1
-                            && visited[next.y as usize][next.x as usize] == u8::MAX
-                        {
-                            queue.push_back(next);
+                        if next_value == current_value + 1 && !visited.contains(&next) {
+                            queue.push(next);
                         }
                     }
                 }
             }
-
-            result += visited
-                .into_iter()
-                .map(|vec| vec.into_iter().filter(|&e| e == 9).count())
-                .sum::<usize>()
         }
 
-        result as i32
+        result
     }
 }
 
@@ -64,9 +62,9 @@ impl Part<i32> for Part2 {
         let mut result = 0;
 
         for &trailhead in &input.trailheads {
-            let mut queue = VecDeque::from(vec![trailhead]);
+            let mut queue = vec![trailhead];
 
-            while let Some(current) = queue.pop_back() {
+            while let Some(current) = queue.pop() {
                 let current_value = input.get(current).unwrap();
 
                 for &direction in &Vec2::CARDINAL_DIRECTIONS {
@@ -77,7 +75,7 @@ impl Part<i32> for Part2 {
                             if next_value == 9 {
                                 result += 1;
                             } else {
-                                queue.push_back(next);
+                                queue.push(next);
                             }
                         }
                     }
