@@ -26,9 +26,9 @@ impl Part<u32> for Part1 {
                     .iter()
                     .map(|&e| {
                         Vec2::CARDINAL_DIRECTIONS
-                            .map(|d| d + e)
                             .iter()
-                            .filter(|&&e| input.get(e).map(|p| p != r.plant).unwrap_or(true))
+                            .map(|&d| d + e)
+                            .filter(|&e| input.get(e).map(|p| p != r.plant).unwrap_or(true))
                             .count()
                     })
                     .sum::<usize>()
@@ -115,7 +115,7 @@ impl Input {
     fn height(&self) -> usize {
         self.raw.len()
     }
-    
+
     fn get(&self, v: Vec2) -> Option<char> {
         self.raw
             .get(v.y as usize)
