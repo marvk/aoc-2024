@@ -27,13 +27,13 @@ impl<T: Part<R> + ?Sized, R: AocResult> Run<R> for T {
         let (actual, duration) = timed(|| { self.solve(input) });
         let expected = self.expect_test();
         assert_eq!(actual, expected, "Part {} test failed after {:?}: Expected {:?} but got {:?}", id, duration, expected, actual);
-        println!("{}", format!("Part {} test was {} {:>10}", id, "successful".green(), format!("{:?}", duration).purple()).bright_yellow());
+        println!("{}", format!("Part {} test was {} {:>10}", id, "      successful".green(), format!("{:?}", duration).purple()).bright_yellow());
         duration
     }
 
     fn run_actual(&self, id: u8, input: &[String]) -> Duration {
         let (actual, duration) = timed(|| { self.solve(input) });
-        println!("{}", format!("Part {} output {:>12} {:>10}", id, format!("{:?}", actual).blue(), format!("{:?}", duration).purple()));
+        println!("{}", format!("Part {} output {:>18} {:>10}", id, format!("{:?}", actual).blue(), format!("{:?}", duration).purple()));
         duration
     }
 
@@ -109,7 +109,7 @@ impl<R1: AocResult + 'static, R2: AocResult + 'static> Day<R1, R2> {
     }
 
     pub fn run(&self) -> (Duration, Duration) {
-        println!("~~~~~~~~{{ {} }} ~~~~~~~~", format!("Day{:0>2}", self.id).yellow());
+        println!("~~~~~~~~~~~{{ {} }} ~~~~~~~~~~~", format!("Day{:0>2}", self.id).yellow());
         (
             self.part1.run_all(1, &self.test_input1, &self.actual_input),
             self.part2.run_all(2, &self.test_input2, &self.actual_input),

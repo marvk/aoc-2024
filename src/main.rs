@@ -1,10 +1,5 @@
 extern crate core;
 
-use std::env;
-use std::io::Error;
-use std::process::Command;
-use std::time::Duration;
-
 use crate::day01::day01;
 use crate::day02::day02;
 use crate::day03::day03;
@@ -18,7 +13,12 @@ use crate::day10::day10;
 use crate::day11::day11;
 use crate::day12::day12;
 use crate::day13::day13;
-// use crate::day14::day14;
+use colored::Colorize;
+use std::env;
+use std::io::Error;
+use std::process::Command;
+use std::time::Duration;
+use crate::day14::day14;
 // use crate::day15::day15;
 // use crate::day16::day16;
 // use crate::day17::day17;
@@ -44,7 +44,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day13;
-// mod day14;
+mod day14;
 // mod day15;
 // mod day16;
 // mod day17;
@@ -73,12 +73,22 @@ fn main() {
         day11().f(),
         day12().f(),
         day13().f(),
+        day14().f(),
     ];
 
     let run_one = |id: usize| (days[id - 1].f)();
 
     let run_all = || {
-        let (p1, p2) = days.iter().map(|d| (d.f)()).unzip();
+        let (p1, p2): (Vec<Duration>, Vec<Duration>) = days.iter().map(|d| (d.f)()).unzip();
+        let x = p1
+            .iter()
+            .chain(p2.iter())
+            .map(|e| e.as_micros())
+            .sum::<u128>();
+        let duration = Duration::from_micros(x as u64);
+
+        println!("~~~~~~~~~~~{{ {} }} ~~~~~~~~~~~", "Total".yellow());
+        println!("                                  {}", format!("{:?}", duration).purple());
         plot(p1, p2).unwrap();
     };
 
