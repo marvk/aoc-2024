@@ -63,8 +63,8 @@ impl Part<i32> for Part2 {
                 robot.walk_once(input.width, input.height);
             }
 
-            // Initial input before scrambling is generated with no overlaps, so we can skip iterations that have an overlap 
-            
+            // Initial input before scrambling is generated with no overlaps, so we can skip iterations that have an overlap
+
             for i in 0..input.robots.len() {
                 for j in i + 1..input.robots.len() {
                     if input.robots[i].position == input.robots[j].position {
@@ -74,7 +74,7 @@ impl Part<i32> for Part2 {
             }
 
             // Technically the flood fill isn't needed because there's always a robot stacked somewhere, but that's not a guarantee so I'm leaving it.
-            
+
             let robots: HashSet<Vec2> = HashSet::from_iter(input.robots.iter().map(|e| e.position));
 
             for robot in &input.robots {

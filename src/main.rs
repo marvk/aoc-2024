@@ -1,5 +1,8 @@
 extern crate core;
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use crate::day01::day01;
 use crate::day02::day02;
 use crate::day03::day03;
@@ -13,12 +16,12 @@ use crate::day10::day10;
 use crate::day11::day11;
 use crate::day12::day12;
 use crate::day13::day13;
+use crate::day14::day14;
 use colored::Colorize;
 use std::env;
 use std::io::Error;
 use std::process::Command;
 use std::time::Duration;
-use crate::day14::day14;
 // use crate::day15::day15;
 // use crate::day16::day16;
 // use crate::day17::day17;
@@ -88,7 +91,7 @@ fn main() {
         let duration = Duration::from_micros(x as u64);
 
         println!("~~~~~~~~~~~{{ {} }} ~~~~~~~~~~~", "Total".yellow());
-        println!("                                  {}", format!("{:?}", duration).purple());
+        println!("                                 {:>10}", format!("{:?}", duration).purple());
         plot(p1, p2).unwrap();
     };
 
