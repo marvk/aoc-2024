@@ -1,9 +1,7 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use image::{Rgb, RgbImage};
 use std::collections::HashSet;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
-use std::path::Path;
 
 pub fn day14() -> Day<i32, i32> {
     Day::new(14, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -60,16 +58,24 @@ impl Part<i32> for Part2 {
             return 0;
         }
 
-        for i in 1.. {
+        'outer: for iteration in 1.. {
             for robot in &mut input.robots {
                 robot.walk_once(input.width, input.height);
             }
 
-            let robots = input
-                .robots
-                .iter()
-                .map(|e| e.position)
-                .collect::<HashSet<_>>();
+            // Initial input before scrambling is generated with no overlaps, so we can skip iterations that have an overlap 
+            
+            for i in 0..input.robots.len() {
+                for j in i + 1..input.robots.len() {
+                    if input.robots[i].position == input.robots[j].position {
+                        continue 'outer;
+                    }
+                }
+            }
+
+            // Technically the flood fill isn't needed because there's always a robot stacked somewhere, but that's not a guarantee so I'm leaving it.
+            
+            let robots: HashSet<Vec2> = HashSet::from_iter(input.robots.iter().map(|e| e.position));
 
             for robot in &input.robots {
                 let mut open = vec![robot.position];
@@ -90,9 +96,8 @@ impl Part<i32> for Part2 {
                         }
                     }
                 }
-
                 if current_closed.len() > 50 {
-                    return i;
+                    return iteration;
                 }
             }
         }
