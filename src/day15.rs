@@ -1,6 +1,5 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::collections::HashMap;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 
 pub fn day15() -> Day<u32, u32> {
@@ -27,17 +26,7 @@ impl Part<u32> for Part1 {
             }
         }
 
-        let mut result = 0;
-
-        for y in 0..input.height {
-            for x in 0..input.width {
-                if let Some(Tile::Box) = input.get(v(x as i32, y as i32)) {
-                    result += 100 * y + x;
-                }
-            }
-        }
-
-        result as u32
+        input.result()
     }
 }
 
@@ -51,7 +40,7 @@ impl Part<u32> for Part2 {
     fn solve(&self, input: &[String]) -> u32 {
         let mut input = Input::from(input);
 
-        input.scale_x(2);
+        input.scale_x2();
 
         let mut robot_position = input.robot_position();
 
@@ -89,9 +78,7 @@ impl TryFrom<char> for Tile {
 
 #[derive(Debug)]
 struct Input {
-    map: HashMap<Vec2, Tile>,
-    width: usize,
-    height: usize,
+    map: Vec<Vec<Option<Tile>>>,
     instructions: Vec<Vec2>,
 }
 
@@ -101,15 +88,10 @@ impl From<&[String]> for Input {
 
         let map_raw = value[0];
 
-        let mut map = HashMap::new();
-
-        for y in 0..map_raw.len() {
-            for x in 0..map_raw[0].len() {
-                if let Ok(tile) = Tile::try_from(map_raw[y].chars().nth(x).unwrap()) {
-                    map.insert(v(x as i32, y as i32), tile);
-                }
-            }
-        }
+        let map = map_raw
+            .iter()
+            .map(|vec| vec.chars().map(|e| Tile::try_from(e).ok()).collect())
+            .collect();
 
         let instructions = value[1]
             .iter()
@@ -124,36 +106,31 @@ impl From<&[String]> for Input {
             })
             .collect();
 
-        Self {
-            map,
-            width: map_raw[0].len(),
-            height: map_raw.len(),
-            instructions,
-        }
+        Self { map, instructions }
     }
 }
 
 impl Input {
     fn get(&self, position: Vec2) -> Option<Tile> {
-        self.map.get(&position).cloned()
+        self.map[position.y as usize][position.x as usize]
     }
 
     fn robot_position(&self) -> Vec2 {
-        *self
-            .map
+        self.map
             .iter()
-            .find_map(|(position, tile)| {
-                if matches!(tile, Tile::Robot) {
-                    Some(position)
-                } else {
-                    None
-                }
+            .enumerate()
+            .find_map(|(y, vec)| {
+                vec.iter()
+                    .enumerate()
+                    .find(|(_, &tile)| matches!(tile, Some(Tile::Robot)))
+                    .map(|(x, _)| v(x as i32, y as i32))
             })
             .unwrap()
     }
 
     fn move1(&mut self, position: Vec2, direction: Vec2) -> bool {
         let position_tile = self.get(position);
+
         if position_tile.is_none() {
             return true;
         }
@@ -166,9 +143,7 @@ impl Input {
         self.move1(next, direction);
 
         if self.get(next).is_none() {
-            let previous = *self.map.get(&position).unwrap();
-            self.map.remove(&position);
-            self.map.insert(next, previous);
+            self.move_tile(position, next);
 
             true
         } else {
@@ -179,7 +154,9 @@ impl Input {
     fn move2(&mut self, position: Vec2, direction: Vec2) -> bool {
         let mut moves = self.move2_rec(position, direction, 0);
 
-        if moves.iter().all(|e| e.is_some()) {
+        let can_move = moves.iter().all(|e| e.is_some());
+
+        if can_move {
             moves.sort_by_key(|e| e.unwrap().2);
 
             moves
@@ -187,11 +164,9 @@ impl Input {
                 .rev()
                 .flatten()
                 .for_each(|(a, b, _)| self.move_tile(a, b));
-
-            true
-        } else {
-            false
         }
+
+        can_move
     }
 
     fn move2_rec(
@@ -232,30 +207,30 @@ impl Input {
     }
 
     fn move_tile(&mut self, from: Vec2, to: Vec2) {
-        if let Some(previous) = self.map.remove(&from) {
-            self.map.insert(to, previous);
+        if let Some(previous) = self.get(from) {
+            self.map[from.y as usize][from.x as usize] = None;
+            self.map[to.y as usize][to.x as usize] = Some(previous);
         }
     }
 
     fn result(&self) -> u32 {
         self.map
             .iter()
-            .filter(|(_, tile)| matches!(tile, Tile::Box))
-            .map(|(position, _)| position.y * 100 + position.x)
-            .sum::<i32>() as u32
+            .enumerate()
+            .flat_map(|(y, vec)| {
+                vec.iter()
+                    .enumerate()
+                    .filter(|(_, &tile)| matches!(tile, Some(Tile::Box)))
+                    .map(move |(x, _)| x + y * 100)
+            })
+            .sum::<usize>() as u32
     }
 
-    fn scale_x(&mut self, factor: usize) {
-        self.width *= factor;
-
+    fn scale_x2(&mut self) {
         self.map = self
             .map
             .iter()
-            .map(|(&position, &tile)| {
-                let mut next_position = position;
-                next_position.x *= factor as i32;
-                (next_position, tile)
-            })
+            .map(|e| e.into_iter().flat_map(|&e| vec![e, None]).collect())
             .collect();
     }
 }
