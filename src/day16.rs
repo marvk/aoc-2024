@@ -1,7 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use std::collections::{HashMap, HashSet};
-use std::iter;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 
 pub fn day16() -> Day<i32, i32> {
@@ -32,12 +31,7 @@ impl Part<i32> for Part2 {
     fn solve(&self, input: &[String]) -> i32 {
         let input = Input::from(input);
 
-        let came_from = best_cost(&input).unwrap().1;
-
-        let end_node = *came_from
-            .keys()
-            .find(|e| e.position == input.end_position)
-            .unwrap();
+        let (_, end_node, came_from) = best_cost(&input).unwrap();
 
         let mut open = vec![end_node];
         let mut closed = HashSet::new();
@@ -134,7 +128,7 @@ impl From<&[String]> for Input {
     }
 }
 
-fn best_cost(input: &Input) -> Option<(i32, HashMap<Node, Vec<Node>>)> {
+fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
     let start = Node::new(input.start_position, input.start_direction);
     let mut open_set = HashSet::from([start]);
     let mut came_from = HashMap::<Node, Vec<Node>>::new();
@@ -148,6 +142,7 @@ fn best_cost(input: &Input) -> Option<(i32, HashMap<Node, Vec<Node>>)> {
     f_score.insert(start, h(start));
 
     while !open_set.is_empty() {
+        // this is very expensive, as in 80% of the runtime
         let current = *open_set
             .iter()
             .min_by_key(|e| f_score.get(e).cloned().unwrap_or(i32::MAX))
@@ -157,8 +152,7 @@ fn best_cost(input: &Input) -> Option<(i32, HashMap<Node, Vec<Node>>)> {
             return g_score
                 .iter()
                 .find(|(&node, _)| node.position == input.end_position)
-                .map(|(_, &score)| score)
-                .map(|e| (e, came_from));
+                .map(|(&node, &score)| (score, node, came_from));
         }
 
         open_set.remove(&current);
