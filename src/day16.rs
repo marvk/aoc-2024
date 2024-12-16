@@ -1,10 +1,8 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use iter::once;
 use std::collections::{HashMap, HashSet};
 use std::iter;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
-use std::path::Iter;
 
 pub fn day16() -> Day<i32, i32> {
     Day::new(16, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -20,7 +18,7 @@ impl Part<i32> for Part1 {
     fn solve(&self, input: &[String]) -> i32 {
         let input = Input::from(input);
 
-        best_cost(&input).unwrap()
+        best_cost(&input).unwrap().0
     }
 }
 
@@ -34,16 +32,32 @@ impl Part<i32> for Part2 {
     fn solve(&self, input: &[String]) -> i32 {
         let input = Input::from(input);
 
-        let best_cost = best_cost(&input).unwrap();
+        let came_from = best_cost(&input).unwrap().1;
 
-        let option = input.search_rec(
-            Node::new(input.start_position, input.start_direction),
-            &mut Vec::new(),
-            0,
-            best_cost,
-        );
+        let end_node = *came_from
+            .keys()
+            .find(|e| e.position == input.end_position)
+            .unwrap();
 
-        option.into_iter().collect::<HashSet<_>>().len() as i32
+        let mut open = vec![end_node];
+        let mut closed = HashSet::new();
+
+        while let Some(current) = open.pop() {
+            if closed.insert(current) {
+                if let Some(neighbours) = came_from.get(&current) {
+                    for x in neighbours {
+                        open.push(*x);
+                    }
+                }
+            }
+        }
+
+        let closed = closed
+            .into_iter()
+            .map(|e| e.position)
+            .collect::<HashSet<_>>();
+
+        closed.len() as i32
     }
 }
 
@@ -79,62 +93,6 @@ struct Input {
 impl Input {
     fn get(&self, p: Vec2) -> Tile {
         self.map[p.y as usize][p.x as usize]
-    }
-
-    fn search_rec(
-        &self,
-        current: Node,
-        path: &mut Vec<(Node, i32)>,
-        cur_cost: i32,
-        max_cost: i32,
-    ) -> Vec<Vec2> {
-        if cur_cost > max_cost {
-            println!("poop");
-            return vec![];
-        }
-
-        if current.position == self.end_position {
-            println!("ding");
-
-            return path
-                .clone()
-                .into_iter()
-                .map(|(node, _)| node.position)
-                .collect();
-        }
-
-        let walk_neighbour = once((
-            Node::new(current.position + current.direction, current.direction),
-            1,
-        ))
-        .filter(|(node, _)| matches!(self.get(node.position), Tile::Empty));
-
-        let neighbours = Vec2::CARDINAL_DIRECTIONS
-            .iter()
-            .filter(|&e| e != &current.direction)
-            .filter(|&&direction| matches!(self.get(current.position + direction), Tile::Empty))
-            .map(|&direction| (Node::new(current.position, direction), 1000))
-            .chain(walk_neighbour);
-
-        let mut result = Vec::new();
-
-        for next in neighbours {
-            if path
-                .iter()
-                .take(path.len() - 1)
-                .any(|e| e.0.position == next.0.position)
-            {
-                continue;
-            }
-
-            path.push((next.0, next.1 + cur_cost));
-
-            result.extend(self.search_rec(next.0, path, cur_cost + next.1, max_cost));
-
-            path.pop();
-        }
-
-        result
     }
 }
 
@@ -176,7 +134,7 @@ impl From<&[String]> for Input {
     }
 }
 
-fn best_cost(input: &Input) -> Option<i32> {
+fn best_cost(input: &Input) -> Option<(i32, HashMap<Node, Vec<Node>>)> {
     let start = Node::new(input.start_position, input.start_direction);
     let mut open_set = HashSet::from([start]);
     let mut came_from = HashMap::<Node, Vec<Node>>::new();
@@ -190,42 +148,39 @@ fn best_cost(input: &Input) -> Option<i32> {
     f_score.insert(start, h(start));
 
     while !open_set.is_empty() {
-        let current = open_set
+        let current = *open_set
             .iter()
             .min_by_key(|e| f_score.get(e).cloned().unwrap_or(i32::MAX))
-            .cloned()
             .unwrap();
 
         if current.position == input.end_position {
             return g_score
                 .iter()
                 .find(|(&node, _)| node.position == input.end_position)
-                .map(|(_, &score)| score);
+                .map(|(_, &score)| score)
+                .map(|e| (e, came_from));
         }
 
         open_set.remove(&current);
 
-        let walk_neighbour = (
-            Node::new(current.position + current.direction, current.direction),
-            1,
-        );
-
         Vec2::CARDINAL_DIRECTIONS
             .iter()
-            .filter(|&e| e != &current.direction)
-            .map(|&direction| (Node::new(current.position, direction), 1000))
-            .chain(once(walk_neighbour))
-            .filter(|(node, _)| {
-                matches!(
-                    input.map[node.position.y as usize][node.position.x as usize],
-                    Tile::Empty
+            .filter(|&&direction| matches!(input.get(current.position + direction), Tile::Empty))
+            .map(|&direction| {
+                (
+                    Node::new(current.position + direction, direction),
+                    if direction == current.direction {
+                        1
+                    } else {
+                        1001
+                    },
                 )
             })
             .for_each(|(neighbour, d)| {
                 let tentative_g_score = g_score.get(&current).cloned().unwrap_or(i32::MAX) + d;
 
-                if tentative_g_score < g_score.get(&neighbour).cloned().unwrap_or(i32::MAX) {
-                    came_from.entry(neighbour);
+                if tentative_g_score <= g_score.get(&neighbour).cloned().unwrap_or(i32::MAX) {
+                    came_from.entry(neighbour).or_default().push(current);
                     g_score.insert(neighbour, tentative_g_score);
                     f_score.insert(neighbour, tentative_g_score + h(neighbour));
 
