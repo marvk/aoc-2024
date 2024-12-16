@@ -141,13 +141,11 @@ fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
     let mut f_score = HashMap::new();
     f_score.insert(start, h(start));
 
-    while !open_set.is_empty() {
-        // this is very expensive, as in 80% of the runtime
-        let current = *open_set
-            .iter()
-            .min_by_key(|e| f_score.get(e).cloned().unwrap_or(i32::MAX))
-            .unwrap();
-
+    while let Some(current) = open_set
+        .iter()
+        .min_by_key(|e| f_score.get(e).cloned().unwrap_or(i32::MAX))
+        .cloned()
+    {
         if current.position == input.end_position {
             return g_score
                 .iter()
@@ -160,6 +158,7 @@ fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
         Vec2::CARDINAL_DIRECTIONS
             .iter()
             .filter(|&&direction| matches!(input.get(current.position + direction), Tile::Empty))
+            .filter(|&&direction| direction != current.direction * -1)
             .map(|&direction| {
                 (
                     Node::new(current.position + direction, direction),
