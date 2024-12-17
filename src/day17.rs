@@ -2,7 +2,7 @@ use crate::harness::Day;
 use crate::harness::Part;
 use std::ops::BitXor;
 
-pub fn day17() -> Day<String, u32> {
+pub fn day17() -> Day<String, u64> {
     Day::new(17, Box::new(Part1 {}), Box::new(Part2 {}))
 }
 
@@ -29,32 +29,41 @@ impl Part<String> for Part1 {
 
 pub struct Part2;
 
-impl Part<u32> for Part2 {
-    fn expect_test(&self) -> u32 {
+impl Part<u64> for Part2 {
+    fn expect_test(&self) -> u64 {
         117440
     }
 
-    fn solve(&self, input: &[String]) -> u32 {
+    fn solve(&self, input: &[String]) -> u64 {
         let computer = Computer::from(input);
 
         if computer.register_a == 2024 {
             return 117440;
         }
 
-        for i in 4000000000.. {
-            if i % 100000 == 0 {
-                println!("{}", i);
-            }
+        for i in 0..63 {
+            let i = 2_u64.pow(i);
 
             let mut current_computer = computer.clone();
             current_computer.register_a = i;
 
             current_computer.run();
 
-            if computer.ops == current_computer.output {
-                return i;
+            println!("{:?}", current_computer.output);
+            if current_computer.output.len() == computer.ops.len() {
+                println!("{}", i);
+                break;
             }
+        }
 
+        let from = 35184372088832_u64;
+        for i in from..from + 100 {
+            let mut current_computer = computer.clone();
+            current_computer.register_a = i;
+
+            current_computer.run();
+
+            println!("{}", i - from);
             println!("{:?}", current_computer.output);
         }
 
@@ -64,9 +73,9 @@ impl Part<u32> for Part2 {
 
 #[derive(Debug, Clone)]
 struct Computer {
-    register_a: u32,
-    register_b: u32,
-    register_c: u32,
+    register_a: u64,
+    register_b: u64,
+    register_c: u64,
     ops: Vec<u8>,
     pc: usize,
     output: Vec<u8>,
@@ -74,7 +83,7 @@ struct Computer {
 
 impl From<&[String]> for Computer {
     fn from(value: &[String]) -> Self {
-        fn parse_register(s: &str) -> u32 {
+        fn parse_register(s: &str) -> u64 {
             s.split(":").nth(1).unwrap().trim().parse().unwrap()
         }
 
@@ -135,13 +144,13 @@ impl Computer {
         self.ops[self.pc + 1]
     }
 
-    fn literal_operand(&self) -> u32 {
-        self.operand_code() as u32
+    fn literal_operand(&self) -> u64 {
+        self.operand_code() as u64
     }
 
-    fn combo_operand(&self) -> u32 {
+    fn combo_operand(&self) -> u64 {
         match self.operand_code() {
-            a if a < 4 => a as u32,
+            a if a < 4 => a as u64,
             4 => self.register_a,
             5 => self.register_b,
             6 => self.register_c,
@@ -154,7 +163,7 @@ impl Computer {
     }
 
     fn adv(&mut self) {
-        self.register_a /= 2_u32.pow(self.combo_operand());
+        self.register_a /= 2_u64.pow(self.combo_operand() as u32);
         self.increment_pc();
     }
 
@@ -187,12 +196,12 @@ impl Computer {
     }
 
     fn bdv(&mut self) {
-        self.register_b = self.register_a / 2_u32.pow(self.combo_operand());
+        self.register_b = self.register_a / 2_u64.pow(self.combo_operand() as u32);
         self.increment_pc();
     }
 
     fn cdv(&mut self) {
-        self.register_c = self.register_a / 2_u32.pow(self.combo_operand());
+        self.register_c = self.register_a / 2_u64.pow(self.combo_operand() as u32);
         self.increment_pc();
     }
 }
