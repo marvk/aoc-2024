@@ -41,12 +41,25 @@ impl Part<u64> for Part2 {
             return 117440;
         }
 
-        let mut current_computer = computer.clone();
-        current_computer.register_a = 1 + 8 * 14 + 8 * 8 * 2;
+        for i in 0..512_u64 {
+            let a = 0_u64;
+            let a = i;
 
-        current_computer.run();
+            let b = (a % 8)
+                .bitxor(5)
+                .bitxor(6)
+                .bitxor(a / (2_u64.pow(((a % 8) as u32).bitxor(5))))
+                % 8;
 
-        println!("{:?}", current_computer.output);
+            println!("{}", b);
+
+            let mut current_computer = computer.clone();
+            current_computer.register_a = a;
+
+            current_computer.run();
+
+            println!("{:?}", current_computer.output);
+        }
 
         // for i in 0..63 {
         //     let i = 2_u64.pow(i);
