@@ -41,31 +41,38 @@ impl Part<u64> for Part2 {
             return 117440;
         }
 
-        for i in 0..63 {
-            let i = 2_u64.pow(i);
+        let mut current_computer = computer.clone();
+        current_computer.register_a = 1 + 8 * 14 + 8 * 8 * 2;
 
-            let mut current_computer = computer.clone();
-            current_computer.register_a = i;
+        current_computer.run();
 
-            current_computer.run();
+        println!("{:?}", current_computer.output);
 
-            println!("{:?}", current_computer.output);
-            if current_computer.output.len() == computer.ops.len() {
-                println!("{}", i);
-                break;
-            }
-        }
-
-        let from = 35184372088832_u64;
-        for i in from..from + 100 {
-            let mut current_computer = computer.clone();
-            current_computer.register_a = i;
-
-            current_computer.run();
-
-            println!("{}", i - from);
-            println!("{:?}", current_computer.output);
-        }
+        // for i in 0..63 {
+        //     let i = 2_u64.pow(i);
+        //
+        //     let mut current_computer = computer.clone();
+        //     current_computer.register_a = i;
+        //
+        //     current_computer.run();
+        //
+        //     println!("{:?}", current_computer.output);
+        //     if current_computer.output.len() == computer.ops.len() {
+        //         println!("{}", i);
+        //         break;
+        //     }
+        // }
+        //
+        // let from = 35184372088832_u64;
+        // for i in from..from + 100 {
+        //     let mut current_computer = computer.clone();
+        //     current_computer.register_a = i;
+        //
+        //     current_computer.run();
+        //
+        //     println!("{}", i - from);
+        //     println!("{:?}", current_computer.output);
+        // }
 
         panic!();
     }
