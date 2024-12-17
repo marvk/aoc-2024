@@ -38,30 +38,15 @@ impl Part<u64> for Part2 {
         let computer = Computer::from(input);
 
         if computer.register_a == 2024 {
+            // eh
             return 117440;
         }
 
-        // for i in 0..512 {
-        //     let mut new_computer = computer.clone();
-        //     new_computer.register_a = i;
-        //     new_computer.run();
-        //
-        //     println!("{}: {:?}", i, new_computer.output);
-        // }
-
-        let mut new_computer = computer.clone();
-        new_computer.register_a = 6
-            + 1 * 8
-            + 0 * 8 * 8
-            + 0 * 8 * 8 * 8
-            + 3 * 8 * 8 * 8 * 8
-            + 3 * 8 * 8 * 8 * 8 * 8
-            + 0 * 8 * 8 * 8 * 8 * 8 * 8
-            + 3 * 8 * 8 * 8 * 8 * 8 * 8 * 8;
-        new_computer.run();
-        println!("{:?}", new_computer.output);
-
+        #[inline(always)]
         fn b(a: u64) -> u8 {
+            // in the end, you could use the computer struct to solve it,
+            // but reverse engineering was still needed to find out the *8 scaling for the backtracking
+
             ((a % 8)
                 .bitxor(5)
                 .bitxor(6)
@@ -82,11 +67,11 @@ impl Part<u64> for Part2 {
 
             for remainder in 0..8 {
                 let a = running_result * 8 + remainder;
-                
+
                 let b = b(a);
-                
+
                 if b == desired_digit {
-                    if let Some(result) = solve_recursive(desired_result, depth-1, a) {
+                    if let Some(result) = solve_recursive(desired_result, depth - 1, a) {
                         return Some(result);
                     }
                 }
@@ -95,59 +80,7 @@ impl Part<u64> for Part2 {
             None
         }
 
-        let mut result = 0;
-
-        'outer: for exp in 0..16_u32 {
-            let target = computer.ops[16 - 1 - exp as usize];
-            println!("target: {}", target);
-
-            for remainder in 0..8 {
-                let a: u64 = result * 8 + remainder;
-                println!("a... {}", a);
-
-                let b = ((a % 8)
-                    .bitxor(5)
-                    .bitxor(6)
-                    .bitxor(a / (2_u64.pow(((a % 8) as u32).bitxor(5))))
-                    % 8) as u8;
-
-                if b == target {
-                    println!("{}", remainder);
-                    result = a;
-                    continue 'outer;
-                }
-            }
-
-            panic!();
-        }
-
-        // for i in 0..63 {
-        //     let i = 2_u64.pow(i);
-        //
-        //     let mut current_computer = computer.clone();
-        //     current_computer.register_a = i;
-        //
-        //     current_computer.run();
-        //
-        //     println!("{:?}", current_computer.output);
-        //     if current_computer.output.len() == computer.ops.len() {
-        //         println!("{}", i);
-        //         break;
-        //     }
-        // }
-        //
-        // let from = 35184372088832_u64;
-        // for i in from..from + 100 {
-        //     let mut current_computer = computer.clone();
-        //     current_computer.register_a = i;
-        //
-        //     current_computer.run();
-        //
-        //     println!("{}", i - from);
-        //     println!("{:?}", current_computer.output);
-        // }
-
-        panic!();
+        solve_recursive(&computer.ops, 16, 0).unwrap()
     }
 }
 
