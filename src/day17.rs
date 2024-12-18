@@ -1,7 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use std::ops::BitXor;
-use std::time::Instant;
 
 pub fn day17() -> Day<String, u64> {
     Day::new(17, Box::new(Part1 {}), Box::new(Part2 {}))
