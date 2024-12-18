@@ -1,6 +1,7 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::collections::{HashMap, HashSet};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 
 pub fn day16() -> Day<i32, i32> {
@@ -128,32 +129,47 @@ impl From<&[String]> for Input {
     }
 }
 
+#[derive(PartialEq, Eq)]
+struct OpenNode(Node, i32);
+
+impl PartialOrd for OpenNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OpenNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.1.cmp(&other.1).reverse()
+    }
+}
+
 fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
     let start = Node::new(input.start_position, input.start_direction);
-    let mut open_set = HashSet::from([start]);
+    let mut open_heap = BinaryHeap::from([OpenNode(start, 0)]);
+    let mut closed_set = HashSet::new();
+
     let mut came_from = HashMap::<Node, Vec<Node>>::new();
 
     let h = |node: Node| node.position.manhattan_dist(input.end_position) as i32;
 
-    let mut g_score = HashMap::new();
-    g_score.insert(start, 0);
+    let mut g_scores = HashMap::new();
+    g_scores.insert(start, 0);
 
-    let mut f_score = HashMap::new();
-    f_score.insert(start, h(start));
+    let mut f_scores = HashMap::new();
+    f_scores.insert(start, h(start));
 
-    while let Some(current) = open_set
-        .iter()
-        .min_by_key(|e| f_score.get(e).cloned().unwrap_or(i32::MAX))
-        .cloned()
-    {
+    while let Some(OpenNode(current, ..)) = open_heap.pop() {
         if current.position == input.end_position {
-            return g_score
+            return g_scores
                 .iter()
                 .find(|(&node, _)| node.position == input.end_position)
                 .map(|(&node, &score)| (score, node, came_from));
         }
 
-        open_set.remove(&current);
+        if !closed_set.insert(current) {
+            continue;
+        }
 
         Vec2::CARDINAL_DIRECTIONS
             .iter()
@@ -169,15 +185,16 @@ fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
                     },
                 )
             })
-            .for_each(|(neighbour, d)| {
-                let tentative_g_score = g_score.get(&current).cloned().unwrap_or(i32::MAX) + d;
+            .for_each(|(neighbour, cost)| {
+                let tentative_g_score = g_scores.get(&current).cloned().unwrap_or(i32::MAX) + cost;
 
-                if tentative_g_score <= g_score.get(&neighbour).cloned().unwrap_or(i32::MAX) {
+                if tentative_g_score <= g_scores.get(&neighbour).cloned().unwrap_or(i32::MAX) {
                     came_from.entry(neighbour).or_default().push(current);
-                    g_score.insert(neighbour, tentative_g_score);
-                    f_score.insert(neighbour, tentative_g_score + h(neighbour));
+                    g_scores.insert(neighbour, tentative_g_score);
+                    let f_score = tentative_g_score + h(neighbour);
+                    f_scores.insert(neighbour, f_score);
 
-                    open_set.insert(neighbour);
+                    open_heap.push(OpenNode(neighbour, f_score));
                 }
             });
     }

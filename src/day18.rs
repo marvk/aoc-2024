@@ -142,20 +142,18 @@ fn search(input: &Input, grid: Vec<Vec<Tile>>) -> Option<i32> {
     let mut f_scores = vec![vec![i32::MAX / 2; input.width]; input.height];
     f_scores[start.y as usize][start.x as usize] = h(start);
 
-    while let Some(current) = open_heap.pop() {
-        if current.0 == input.end {
+    while let Some(Node(current,..)) = open_heap.pop() {
+        if current == input.end {
             return Some(g_scores[input.end.y as usize][input.end.x as usize]);
         }
 
-        if closed_set.contains(&current.0) {
+        if !closed_set.insert(current) {
             continue;
         }
 
-        closed_set.insert(current.0);
-
         Vec2::CARDINAL_DIRECTIONS
             .iter()
-            .map(|&d| current.0 + d)
+            .map(|&d| current + d)
             .filter(|neighbour| {
                 matches!(
                     grid.get(neighbour.y as usize)
@@ -164,7 +162,7 @@ fn search(input: &Input, grid: Vec<Vec<Tile>>) -> Option<i32> {
                 )
             })
             .for_each(|neighbour| {
-                let tentative_g_score = g_scores[current.0.y as usize][current.0.x as usize] + 1;
+                let tentative_g_score = g_scores[current.y as usize][current.x as usize] + 1;
 
                 if tentative_g_score <= g_scores[neighbour.y as usize][neighbour.x as usize] {
                     g_scores[neighbour.y as usize][neighbour.x as usize] = tentative_g_score;
