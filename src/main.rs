@@ -95,7 +95,10 @@ fn main() {
         let duration = Duration::from_micros(x as u64);
 
         println!("~~~~~~~~~~~{{ {} }} ~~~~~~~~~~~", "Total".yellow());
-        println!("                                 {:>10}", format!("{:?}", duration).purple());
+        println!(
+            "                                 {:>10}",
+            format!("{:?}", duration).purple()
+        );
         plot(p1, p2).unwrap();
     };
 
@@ -137,8 +140,8 @@ fn plot(part1: Vec<Duration>, part2: Vec<Duration>) -> Result<(), Error> {
     Command::new("C:\\Users\\Marvin\\.gradle\\jdks\\eclipse_adoptium-18-amd64-windows\\jdk-18.0.2.1+1\\bin\\java.exe")
         .arg("-jar")
         .arg("plotter.jar")
-        .arg(&convert(part1))
-        .arg(&convert(part2))
+        .arg(convert(part1))
+        .arg(convert(part2))
         .spawn()?
         .wait()?;
 

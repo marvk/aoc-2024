@@ -1,6 +1,7 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use std::ops::BitXor;
+use std::time::Instant;
 
 pub fn day17() -> Day<String, u64> {
     Day::new(17, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -42,45 +43,7 @@ impl Part<u64> for Part2 {
             return 117440;
         }
 
-        #[inline(always)]
-        fn b(a: u64) -> u8 {
-            // in the end, you could use the computer struct to solve it,
-            // but reverse engineering was still needed to find out the *8 scaling for the backtracking
-
-            ((a % 8)
-                .bitxor(5)
-                .bitxor(6)
-                .bitxor(a / (2_u64.pow(((a % 8) as u32).bitxor(5))))
-                % 8) as u8
-        }
-
-        fn solve_recursive(
-            desired_result: &[u8],
-            depth: usize,
-            running_result: u64,
-        ) -> Option<u64> {
-            if depth == 0 {
-                return Some(running_result);
-            }
-
-            let desired_digit = desired_result[depth - 1];
-
-            for remainder in 0..8 {
-                let a = running_result * 8 + remainder;
-
-                let b = b(a);
-
-                if b == desired_digit {
-                    if let Some(result) = solve_recursive(desired_result, depth - 1, a) {
-                        return Some(result);
-                    }
-                }
-            }
-
-            None
-        }
-
-        solve_recursive(&computer.ops, 16, 0).unwrap()
+        solve_backtracking(&computer.ops, 16, 0).unwrap()
     }
 }
 
@@ -92,6 +55,38 @@ struct Computer {
     ops: Vec<u8>,
     pc: usize,
     output: Vec<u8>,
+}
+
+#[inline(always)]
+fn b(a: u64) -> u8 {
+    // in the end, you could use the computer struct to solve it,
+    // but reverse engineering was still needed to find out the *8 scaling for the backtracking
+
+    ((a % 8)
+        .bitxor(5)
+        .bitxor(6)
+        .bitxor(a / (2_u64.pow(((a % 8) as u32).bitxor(5))))
+        % 8) as u8
+}
+
+fn solve_backtracking(desired_result: &[u8], depth: usize, running_result: u64) -> Option<u64> {
+    if depth == 0 {
+        return Some(running_result);
+    }
+
+    let desired_digit = desired_result[depth - 1];
+
+    for remainder in 0..8 {
+        let a = running_result * 8 + remainder;
+
+        if b(a) == desired_digit {
+            if let Some(result) = solve_backtracking(desired_result, depth - 1, a) {
+                return Some(result);
+            }
+        }
+    }
+
+    None
 }
 
 impl From<&[String]> for Computer {
@@ -125,14 +120,6 @@ impl Computer {
         while let Some(()) = self.execute_once() {}
     }
 
-    fn run_n(&mut self, n: usize) {
-        for _ in 0..n {
-            if let None = self.execute_once() {
-                break;
-            }
-        }
-    }
-
     fn execute_once(&mut self) -> Option<()> {
         match self.op()? {
             0 => self.adv(),
@@ -163,7 +150,7 @@ impl Computer {
 
     fn combo_operand(&self) -> u64 {
         match self.operand_code() {
-            a if a < 4 => a as u64,
+            code if code < 4 => code as u64,
             4 => self.register_a,
             5 => self.register_b,
             6 => self.register_c,
