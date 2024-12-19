@@ -40,7 +40,7 @@ impl Part<u64> for Part2 {
 
         let mut result = 0;
         let mut map = HashMap::new();
-        
+
         for design in input.designs {
             result += backtrack2(&input.patterns, design, &mut String::new(), &mut map);
             map.clear();

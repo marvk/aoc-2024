@@ -3,7 +3,6 @@ use crate::harness::Part;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashSet};
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
-use std::time::Instant;
 
 pub fn day18() -> Day<i32, String> {
     Day::new(18, Box::new(Part1 {}), Box::new(Part2 {}))
