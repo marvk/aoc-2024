@@ -62,25 +62,14 @@ impl Part<u64> for Part2 {
         loop {
             let current = &data[i];
 
-            if let Block2 {
-                block: Data { .. }, ..
-            } = current
-            {
+            if let Block2 { block: Data { .. }, .. } = current {
                 let to_swap = data
                     .iter()
+                    .take(i)
                     .enumerate()
-                    .filter(|&(j, _)| j < i)
-                    .filter(|(_, block)| matches!(block.block, Block::Empty))
-                    .find(|(_, block)| block.size >= current.size);
+                    .find(|(_, block)| matches!(block.block, Block::Empty) && block.size >= current.size);
 
-                if let Some((
-                    swap_index,
-                    &Block2 {
-                        size: swap_block_size,
-                        ..
-                    },
-                )) = to_swap
-                {
+                if let Some((swap_index, &Block2 { size: swap_block_size, .. }, )) = to_swap {
                     if swap_block_size == current.size {
                         data.swap(i, swap_index);
                     } else {
