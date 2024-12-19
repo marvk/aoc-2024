@@ -52,7 +52,7 @@ impl Part<String> for Part2 {
                     return format!(
                         "{},{}",
                         input.blockers[current - 1].x,
-                        input.blockers[current - 1].y
+                        input.blockers[current - 1].y,
                     );
                 }
             }
@@ -138,10 +138,7 @@ fn search(input: &Input, grid: Vec<Vec<Tile>>) -> Option<i32> {
     let mut g_scores = vec![vec![i32::MAX / 2; input.width]; input.height];
     g_scores[start.y as usize][start.x as usize] = 0;
 
-    let mut f_scores = vec![vec![i32::MAX / 2; input.width]; input.height];
-    f_scores[start.y as usize][start.x as usize] = h(start);
-
-    while let Some(Node(current,..)) = open_heap.pop() {
+    while let Some(Node(current, ..)) = open_heap.pop() {
         if current == input.end {
             return Some(g_scores[input.end.y as usize][input.end.x as usize]);
         }
@@ -166,7 +163,6 @@ fn search(input: &Input, grid: Vec<Vec<Tile>>) -> Option<i32> {
                 if tentative_g_score <= g_scores[neighbour.y as usize][neighbour.x as usize] {
                     g_scores[neighbour.y as usize][neighbour.x as usize] = tentative_g_score;
                     let f_score = tentative_g_score + h(neighbour);
-                    f_scores[neighbour.y as usize][neighbour.x as usize] = f_score;
 
                     open_heap.push(Node(neighbour, f_score));
                 }

@@ -156,9 +156,6 @@ fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
     let mut g_scores = HashMap::new();
     g_scores.insert(start, 0);
 
-    let mut f_scores = HashMap::new();
-    f_scores.insert(start, h(start));
-
     while let Some(OpenNode(current, ..)) = open_heap.pop() {
         if current.position == input.end_position {
             return g_scores
@@ -192,7 +189,6 @@ fn best_cost(input: &Input) -> Option<(i32, Node, HashMap<Node, Vec<Node>>)> {
                     came_from.entry(neighbour).or_default().push(current);
                     g_scores.insert(neighbour, tentative_g_score);
                     let f_score = tentative_g_score + h(neighbour);
-                    f_scores.insert(neighbour, f_score);
 
                     open_heap.push(OpenNode(neighbour, f_score));
                 }

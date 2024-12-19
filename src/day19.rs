@@ -80,8 +80,8 @@ fn backtrack2(
         return 1;
     }
 
-    if let Some(result) = cache.get(running_result) {
-        return *result;
+    if let Some(&result) = cache.get(running_result) {
+        return result;
     }
 
     let mut result = 0;
