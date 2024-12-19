@@ -73,7 +73,7 @@ impl Part<i32> for Part2 {
                 }
             }
 
-            // Technically the flood fill isn't needed because there's always a robot stacked somewhere, but that's not a guarantee so I'm leaving it.
+            // Technically the flood fill isn't needed because there's always a robot stacked somewhere, but that's not a guarantee, so I'm leaving it.
 
             let robots: HashSet<Vec2> = HashSet::from_iter(input.robots.iter().map(|e| e.position));
 
