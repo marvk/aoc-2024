@@ -78,13 +78,13 @@ impl Part<i32> for Part2 {
 
         for y1 in 1..input.height() - 1 {
             for x1 in 1..input.width() - 1 {
-                for y2 in max(1, y1.saturating_sub(20))..min(input.height() - 1, y1 + 20 + 1) {
-                    let diff = y1.abs_diff(y2);
-                    for x2 in max(1, x1.saturating_sub(20 - diff))..min(input.width() - 1, x1 + 20 + 1 - diff)
-                    {
+                for y_diff in 0_i32..=20 {
+                    let x_min = if y_diff == 0 { 0 } else { -20 + y_diff };
+                    let x_max = (20 - y_diff);
+                    for x_diff in x_min..=x_max {
                         let current = v(x1 as i32, y1 as i32);
                         if let Some(current_dist) = get(current) {
-                            let other = v(x2 as i32, y2 as i32);
+                            let other = v(x1 as i32 + x_diff, y1 as i32 + y_diff);
                             if let Some(other_dist) = get(other) {
                                 let dist = current.manhattan_dist(other) as i32;
                                 let diff = current_dist.abs_diff(other_dist) as i32 - dist;
@@ -99,7 +99,7 @@ impl Part<i32> for Part2 {
             }
         }
 
-        result / 2
+        result
     }
 }
 
