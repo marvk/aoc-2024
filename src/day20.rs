@@ -78,8 +78,10 @@ impl Part<i32> for Part2 {
 
         for y1 in 1..input.height() - 1 {
             for x1 in 1..input.width() - 1 {
-                for y2 in max(1, y1 - 20)..min(input.height() - 1, y1 + 20) {
-                    for x2 in max(1, x1 - 20)..min(input.width() - 1, x1 + 20) {
+                for y2 in max(1, y1.saturating_sub(20))..min(input.height() - 1, y1 + 20 + 1) {
+                    let diff = y1.abs_diff(y2);
+                    for x2 in max(1, x1.saturating_sub(20 - diff))..min(input.width() - 1, x1 + 20 + 1 - diff)
+                    {
                         let current = v(x1 as i32, y1 as i32);
                         if let Some(current_dist) = get(current) {
                             let other = v(x2 as i32, y2 as i32);
@@ -126,29 +128,29 @@ impl Input {
         let mut dist = vec![vec![i32::MAX / 2; self.width()]; self.height()];
         dist[self.end.y as usize][self.end.x as usize] = 0;
 
-        let mut open = HashSet::from([self.end]);
-        let mut closed = HashSet::new();
+        let mut next = Some(self.end);
+        let mut previous_direction = v(0, 0);
 
-        while let Some(&u) = open.iter().min_by_key(|e| dist[e.y as usize][e.x as usize]) {
-            open.remove(&u);
-            if !closed.insert(u) {
-                continue;
-            }
+        let mut i = 1;
 
-            for direction in Vec2::CARDINAL_DIRECTIONS {
-                let v = u + direction;
+        while let Some(current) = next.take() {
+            for &direction in Vec2::CARDINAL_DIRECTIONS
+                .iter()
+                .filter(|&&e| e * -1 != previous_direction)
+            {
+                let current_next = current + direction;
 
-                if let Tile::Wall = self.map[v.y as usize][v.x as usize] {
+                if let Tile::Wall = self.map[current_next.y as usize][current_next.x as usize] {
                     continue;
                 }
 
-                let alt = dist[u.y as usize][u.x as usize] + 1;
-
-                if alt < dist[v.y as usize][v.x as usize] && !closed.contains(&v) {
-                    dist[v.y as usize][v.x as usize] = alt;
-                    open.insert(v);
-                }
+                dist[current_next.y as usize][current_next.x as usize] = i;
+                next = Some(current_next);
+                previous_direction = direction;
+                break;
             }
+
+            i += 1;
         }
 
         dist
