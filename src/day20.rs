@@ -1,10 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::cmp::max;
-use std::cmp::min;
-use std::collections::{HashMap, HashSet};
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
-use std::time::Instant;
 
 pub fn day20() -> Day<i32, i32> {
     Day::new(20, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -113,7 +109,6 @@ enum Tile {
 #[derive(Debug)]
 struct Input {
     map: Vec<Vec<Tile>>,
-    start: Vec2,
     end: Vec2,
 }
 
@@ -160,7 +155,6 @@ impl Input {
 
 impl From<&[String]> for Input {
     fn from(value: &[String]) -> Self {
-        let mut start = None;
         let mut end = None;
 
         let map = value
@@ -171,12 +165,8 @@ impl From<&[String]> for Input {
                 s.chars()
                     .enumerate()
                     .map(|(x, c)| match c {
-                        '.' => Tile::Empty,
+                        '.' | 'S' => Tile::Empty,
                         '#' => Tile::Wall,
-                        'S' => {
-                            start = Some(v(x as i32, y as i32));
-                            Tile::Empty
-                        }
                         'E' => {
                             end = Some(v(x as i32, y as i32));
                             Tile::Empty
@@ -189,7 +179,6 @@ impl From<&[String]> for Input {
 
         Self {
             map,
-            start: start.unwrap(),
             end: end.unwrap(),
         }
     }
@@ -216,10 +205,6 @@ impl Vec2 {
     pub const WEST: Self = v(-1, 0);
 
     pub const CARDINAL_DIRECTIONS: [Self; 4] = [Self::NORTH, Self::EAST, Self::SOUTH, Self::WEST];
-
-    fn manhattan_dist(&self, rhs: Vec2) -> u32 {
-        self.x.abs_diff(rhs.x) + self.y.abs_diff(rhs.y)
-    }
 }
 
 impl Add<Vec2> for Vec2 {
