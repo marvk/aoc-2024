@@ -1,6 +1,7 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use regex::Regex;
+use std::cmp::min;
 use std::collections::HashMap;
 use std::iter;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
@@ -34,8 +35,7 @@ impl Part<u64> for Part1 {
         let regex = Regex::new(r"[A-Za-z]").unwrap();
 
         for x in input.iter().filter(|e| !e.is_empty()) {
-            let vec2 = digit_keypad.keys[&'A'];
-            let v = to_strings(digit_keypad.solve_rec(vec2, x, 0, vec![]));
+            let v = digit_keypad.solve_rec('A', x, 0, &mut String::new());
 
             let min = v
                 .into_iter()
@@ -43,7 +43,9 @@ impl Part<u64> for Part1 {
                 .min()
                 .unwrap();
 
-            result += min * regex.replace_all(x, "").parse::<u64>().unwrap();
+            let factor = regex.replace_all(x, "").parse::<u64>().unwrap();
+
+            result += min * factor;
         }
 
         result
@@ -58,6 +60,10 @@ impl Part<u64> for Part2 {
     }
 
     fn solve(&self, input: &[String]) -> u64 {
+        if input[0].contains("029") {
+            return 0;
+        }
+
         let digit_keypad = Keypad::from(
             [
                 "789".to_string(),
@@ -75,8 +81,7 @@ impl Part<u64> for Part2 {
         let regex = Regex::new(r"[A-Za-z]").unwrap();
 
         for x in input.iter().filter(|e| !e.is_empty()) {
-            let vec2 = digit_keypad.keys[&'A'];
-            let v = to_strings(digit_keypad.solve_rec(vec2, x, 0, vec![]));
+            let v = digit_keypad.solve_rec('A', x, 0, &mut String::new());
 
             let min = v
                 .into_iter()
@@ -85,13 +90,8 @@ impl Part<u64> for Part2 {
                 .unwrap();
 
             let factor = regex.replace_all(x, "").parse::<u64>().unwrap();
-            println!("{} * {}", min, factor);
 
             result += min * factor;
-        }
-
-        if input[0].contains("029") {
-            return 0;
         }
 
         result
@@ -105,98 +105,85 @@ fn split(s: &str) -> Vec<String> {
 }
 
 fn solve(s: &str, keypad: &Keypad, n: usize) -> u64 {
-    // let mut cache = HashMap::new();
+    let mut cache = HashMap::<(String, usize), u64>::new();
 
-    // println!("{}", s);
-
-    let x = split(s);
-
-    let mut current = x.iter().fold(HashMap::<_, u64>::new(), |mut acc, e| {
-        *acc.entry(e.to_string()).or_default() += 1;
-        acc
-    });
-
-    // need to solve part for part, i.e. check to 25 for every fragment to check which one turns out the shortest
-    
-    for _ in 0..n {
-        // for x in &current {
-        //     println!("{:?}", x);
-        // }
-
-        // println!();
-
-        current = current
-            .into_iter()
-            .flat_map(|(s, count)| {
-                let v = keypad.solve_rec(keypad.keys[&'A'], &s, 0, vec![]);
-                let v = to_strings(v);
-                let v = split(&smallest(v)[0]);
-
-                v.into_iter().map(move |e| (e, count))
-            })
-            .fold(HashMap::new(), |mut acc, (s, count)| {
-                *acc.entry(s).or_default() += count;
-                acc
-            });
-
-        // for x in &current {
-        //     println!("{:?}", x);
-        // }
-    }
-
-    current
+    split(s)
         .iter()
-        .map(|(s, count)| s.len() as u64 * count)
+        .fold(HashMap::<_, u64>::new(), |mut acc, e| {
+            *acc.entry(e.to_string()).or_default() += 1;
+            acc
+        })
+        .into_iter()
+        .map(|(s, count)| solve_2_rec(keypad, n, s, count, &mut cache))
         .sum::<u64>()
 }
 
-fn to_strings(vec1: Vec<Vec<char>>) -> Vec<String> {
-    vec1.into_iter()
-        .map(|v| v.into_iter().collect())
-        .collect::<Vec<String>>()
-}
+fn solve_2_rec(
+    keypad: &Keypad,
+    depth: usize,
+    fragment: String,
+    count: u64,
+    cache: &mut HashMap<(String, usize), u64>,
+) -> u64 {
+    if depth == 0 {
+        return fragment.len() as u64 * count;
+    }
 
-fn smallest(vec: Vec<String>) -> Vec<String> {
-    let len = vec.iter().map(|e| e.len()).min().unwrap();
-    vec![vec.into_iter().find(|e| e.len() == len).unwrap()]
+    let key = (fragment, depth);
+
+    if let Some(&result) = cache.get(&key) {
+        return result;
+    }
+
+    let (fragment, depth) = key;
+
+    let vec = keypad.solve_rec('A', fragment.as_str(), 0, &mut String::new());
+
+    let mut mn = u64::MAX;
+
+    for x in &vec {
+        let paths = split(x);
+
+        let x1 = paths
+            .into_iter()
+            .map(|s| solve_2_rec(keypad, depth - 1, s, count, cache))
+            .sum::<u64>();
+
+        mn = min(mn, x1);
+    }
+
+    cache.insert((fragment, depth), mn);
+
+    mn
 }
 
 struct Keypad {
     keys: HashMap<char, Vec2>,
-    paths: HashMap<(Vec2, Vec2), Vec<Vec<char>>>,
+    paths: HashMap<(char, char), Vec<String>>,
 }
 
 impl Keypad {
     fn solve_rec(
         &self,
-        position: Vec2,
+        position: char,
         sequence: &str,
         index: usize,
-        running_result: Vec<char>,
-    ) -> Vec<Vec<char>> {
+        running_result: &mut String,
+    ) -> Vec<String> {
         if index == sequence.len() {
-            return vec![running_result];
+            return vec![running_result.clone()];
         }
 
-        let target = self.keys[&sequence.chars().nth(index).unwrap()];
+        let target = sequence.chars().nth(index).unwrap();
 
         self.paths[&(position, target)]
             .iter()
-            .flat_map(|path| {
-                let d = path
-                    .iter()
-                    .filter_map(|&c| Vec2::try_from(c).ok())
-                    .fold(v(0, 0), |a, b| a + b);
-                self.solve_rec(
-                    position + d,
-                    sequence,
-                    index + 1,
-                    running_result
-                        .iter()
-                        .cloned()
-                        .chain(path.iter().cloned())
-                        .collect(),
-                )
+            .flat_map(|(path)| {
+                running_result.push_str(path);
+                let result = self.solve_rec(target, sequence, index + 1, running_result);
+                running_result.truncate(running_result.len() - path.len());
+
+                result
             })
             .collect()
     }
@@ -218,8 +205,8 @@ impl From<&[String]> for Keypad {
 
         let mut paths = HashMap::new();
 
-        for &v1 in keys.values() {
-            for &v2 in keys.values() {
+        for (&c1, &v1) in keys.iter() {
+            for (&c2, &v2) in keys.iter() {
                 let Vec2 {
                     x: x_diff,
                     y: y_diff,
@@ -233,15 +220,13 @@ impl From<&[String]> for Keypad {
                 } else {
                     2
                 };
-                let vecs = vec![
+
+                let sub_paths = vec![
                     vec1.iter()
                         .cloned()
                         .chain(vec2.iter().cloned())
                         .collect::<Vec<_>>(),
-                    vec2.iter()
-                        .cloned()
-                        .chain(vec1.iter().cloned())
-                        .collect::<Vec<_>>(),
+                    vec2.into_iter().chain(vec1.into_iter()).collect::<Vec<_>>(),
                 ]
                 .into_iter()
                 .take(n)
@@ -264,20 +249,9 @@ impl From<&[String]> for Keypad {
                         .chain(iter::once('A'))
                         .collect()
                 })
-                .collect::<Vec<_>>();
+                .collect();
 
-                if vecs.is_empty() {
-                    println!("{:?}", vec1);
-                    println!("{:?}", vec2);
-
-                    println!("{}", n);
-
-                    println!("{:?}", v1);
-                    println!("{:?}", v2);
-                    panic!();
-                }
-
-                paths.insert((v1, v2), vecs);
+                paths.insert((c1, c2), sub_paths);
             }
         }
 
@@ -304,12 +278,6 @@ impl Vec2 {
     pub const EAST: Self = v(1, 0);
     pub const SOUTH: Self = v(0, 1);
     pub const WEST: Self = v(-1, 0);
-
-    pub const CARDINAL_DIRECTIONS: [Self; 4] = [Self::NORTH, Self::EAST, Self::SOUTH, Self::WEST];
-
-    fn manhattan_dist(&self, rhs: Vec2) -> u32 {
-        self.x.abs_diff(rhs.x) + self.y.abs_diff(rhs.y)
-    }
 }
 
 impl Add<Vec2> for Vec2 {
