@@ -28,7 +28,7 @@ impl Part<i32> for Part1 {
         );
 
         let arrow_keypad = Keypad::from([" ^A".to_string(), "<v>".to_string()].as_slice());
-        
+
         let mut result = 0;
 
         let regex = Regex::new(r"[A-Za-z]").unwrap();
@@ -36,18 +36,21 @@ impl Part<i32> for Part1 {
         for x in input.iter().filter(|e| !e.is_empty()) {
             let vec2 = digit_keypad.keys[&'A'];
             let v = to_strings(digit_keypad.solve_rec(vec2, x, 0, vec![]));
+            let v = filter_lengths(v);
 
             let v = to_strings(
                 v.iter()
                     .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
                     .collect(),
             );
+            let v = filter_lengths(v);
 
             let v = to_strings(
                 v.iter()
                     .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
                     .collect(),
             );
+            let v = filter_lengths(v);
 
             result += v.iter().map(|e| e.len()).min().unwrap()
                 * regex.replace_all(x, "").parse::<usize>().unwrap();
@@ -61,14 +64,14 @@ pub struct Part2;
 
 impl Part<i32> for Part2 {
     fn expect_test(&self) -> i32 {
-0
+        0
     }
 
     fn solve(&self, input: &[String]) -> i32 {
         if input[0].contains("029") {
             return 0;
         }
-        
+
         let digit_keypad = Keypad::from(
             [
                 "789".to_string(),
@@ -76,7 +79,7 @@ impl Part<i32> for Part2 {
                 "123".to_string(),
                 " 0A".to_string(),
             ]
-                .as_slice(),
+            .as_slice(),
         );
 
         let arrow_keypad = Keypad::from([" ^A".to_string(), "<v>".to_string()].as_slice());
@@ -113,11 +116,23 @@ impl Part<i32> for Part2 {
                     .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
                     .collect(),
             );
-
+            // 
+            // let v = to_strings(
+            //     v.iter()
+            //         .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
+            //         .collect(),
+            // );
+            
             println!("{}", v.len());
 
-            result += v.iter().map(|e| e.len()).min().unwrap()
-                * regex.replace_all(x, "").parse::<usize>().unwrap();
+            for x in v {
+                println!("{}", x);
+            }
+
+            println!();
+
+            // result += v.iter().map(|e| e.len()).min().unwrap()
+            //     * regex.replace_all(x, "").parse::<usize>().unwrap();
         }
 
         result as i32
@@ -125,11 +140,14 @@ impl Part<i32> for Part2 {
 }
 
 fn to_strings(vec1: Vec<Vec<char>>) -> Vec<String> {
-    let len = vec1.iter().map(|e| e.len()).min().unwrap();
     vec1.into_iter()
-        .filter(|e| e.len() == len)
         .map(|v| v.into_iter().collect())
         .collect::<Vec<String>>()
+}
+
+fn filter_lengths(vec: Vec<String>) -> Vec<String> {
+    let len = vec.iter().map(|e| e.len()).min().unwrap();
+    vec![vec.into_iter().find(|e| e.len() == len).unwrap()]
 }
 
 struct Keypad {
