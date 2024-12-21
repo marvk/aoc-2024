@@ -37,10 +37,6 @@ impl Part<u64> for Part2 {
     }
 }
 
-fn split(s: &str) -> impl Iterator<Item = String> + '_ {
-    s.split_inclusive("A").map(|e| e.to_string())
-}
-
 fn solve(input: &[String], n: usize) -> u64 {
     let digit_keypad = Keypad::from(["789", "456", "123", " 0A"].as_slice());
     let arrow_keypad = Keypad::from([" ^A", "<v>"].as_slice());
@@ -154,8 +150,8 @@ impl Keypad {
 
         let (fragment, depth) = key;
 
-        let vec1 = self.solve_one_sequence('A', fragment.as_str(), 0, &mut vec![], fragment_cache);
-        let result = vec1
+        let result = self
+            .solve_one_sequence('A', fragment.as_str(), 0, &mut vec![], fragment_cache)
             .into_iter()
             .map(|x| {
                 x.iter()
