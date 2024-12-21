@@ -3,7 +3,9 @@ use crate::harness::Part;
 use regex::Regex;
 use std::collections::HashMap;
 use std::iter;
+use std::iter::Map;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
+use std::str::SplitInclusive;
 
 pub fn day21() -> Day<u64, u64> {
     Day::new(21, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -37,10 +39,8 @@ impl Part<u64> for Part2 {
     }
 }
 
-fn split(s: &str) -> Vec<String> {
-    s.split_inclusive("A")
-        .map(|e| e.to_string())
-        .collect::<Vec<_>>()
+fn split(s: &str) -> Map<SplitInclusive<&str>, fn(&str) -> String> {
+    s.split_inclusive("A").map(|e| e.to_string())
 }
 
 fn solve(input: &[String], n: usize) -> u64 {
@@ -54,9 +54,9 @@ fn solve(input: &[String], n: usize) -> u64 {
         .filter(|e| !e.is_empty())
         .map(|s| {
             let min = digit_keypad
-                .solve('A', s, 0, &mut String::new())
+                .solve_one_sequence('A', s, 0, &mut vec![])
                 .into_iter()
-                .map(|s| solve_2_rec_entry(s.as_str(), &arrow_keypad, n))
+                .map(|s| arrow_keypad.solve_full_sequence(s.as_str(), n))
                 .min()
                 .unwrap();
 
@@ -67,84 +67,82 @@ fn solve(input: &[String], n: usize) -> u64 {
         .sum()
 }
 
-fn solve_2_rec_entry(s: &str, keypad: &Keypad, n: usize) -> u64 {
-    let mut cache = HashMap::new();
-
-    split(s)
-        .iter()
-        .fold(HashMap::new(), |mut acc, e| {
-            *acc.entry(e.to_string()).or_default() += 1;
-            acc
-        })
-        .into_iter()
-        .map(|(s, count)| solve_2_rec(keypad, n, s, count, &mut cache))
-        .sum::<u64>()
-}
-
-fn solve_2_rec(
-    keypad: &Keypad,
-    depth: usize,
-    fragment: String,
-    count: u64,
-    cache: &mut HashMap<(String, usize), u64>,
-) -> u64 {
-    if depth == 0 {
-        return fragment.len() as u64 * count;
-    }
-
-    let key = (fragment, depth);
-
-    if let Some(&result) = cache.get(&key) {
-        return result;
-    }
-
-    let (fragment, depth) = key;
-
-    let result = keypad
-        .solve('A', fragment.as_str(), 0, &mut String::new())
-        .into_iter()
-        .map(|x| {
-            split(&x)
-                .into_iter()
-                .map(|s| solve_2_rec(keypad, depth - 1, s, count, cache))
-                .sum::<u64>()
-        })
-        .min()
-        .unwrap();
-
-    cache.insert((fragment, depth), result);
-
-    result
-}
-
 struct Keypad {
     paths: HashMap<(char, char), Vec<String>>,
 }
 
 impl Keypad {
-    fn solve(
-        &self,
+    fn solve_one_sequence<'a: 'b, 'b>(
+        &'a self,
         position: char,
         sequence: &str,
         index: usize,
-        running_result: &mut String,
+        running_result: &mut Vec<&'b String>,
     ) -> Vec<String> {
         if index == sequence.len() {
-            return vec![running_result.clone()];
+            return vec![running_result.iter().map(|s| s.as_str()).collect()];
         }
 
-        let target = sequence.chars().nth(index).unwrap();
+        let target = sequence.as_bytes()[index] as char;
 
         self.paths[&(position, target)]
             .iter()
-            .flat_map(|path| {
-                running_result.push_str(path);
-                let result = self.solve(target, sequence, index + 1, running_result);
-                running_result.truncate(running_result.len() - path.len());
+            .flat_map(|path: &'a String| {
+                running_result.push(path);
+                let result = self.solve_one_sequence(target, sequence, index + 1, running_result);
+                running_result.pop();
 
                 result
             })
             .collect()
+    }
+
+    fn solve_full_sequence(&self, s: &str, n: usize) -> u64 {
+        let mut cache = HashMap::new();
+
+        split(s)
+            .fold(HashMap::new(), |mut acc, e| {
+                *acc.entry(e.to_string()).or_default() += 1;
+                acc
+            })
+            .into_iter()
+            .map(|(s, count)| self.solve_full_sequence_rec(n, s, count, &mut cache))
+            .sum::<u64>()
+    }
+
+    fn solve_full_sequence_rec(
+        &self,
+        depth: usize,
+        fragment: String,
+        count: u64,
+        cache: &mut HashMap<(String, usize), u64>,
+    ) -> u64 {
+        if depth == 0 {
+            return fragment.len() as u64 * count;
+        }
+
+        let key = (fragment, depth);
+
+        if let Some(&result) = cache.get(&key) {
+            return result;
+        }
+
+        let (fragment, depth) = key;
+
+        let result = self
+            .solve_one_sequence('A', fragment.as_str(), 0, &mut vec![])
+            .into_iter()
+            .map(|x| {
+                split(&x)
+                    .map(|s| self.solve_full_sequence_rec(depth - 1, s, count, cache))
+                    .sum::<u64>()
+            })
+            .min()
+            .unwrap();
+
+        cache.insert((fragment, depth), result);
+
+        result
     }
 }
 
