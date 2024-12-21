@@ -5,18 +5,18 @@ use std::collections::HashMap;
 use std::iter;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 
-pub fn day21() -> Day<i32, i32> {
+pub fn day21() -> Day<u64, u64> {
     Day::new(21, Box::new(Part1 {}), Box::new(Part2 {}))
 }
 
 pub struct Part1;
 
-impl Part<i32> for Part1 {
-    fn expect_test(&self) -> i32 {
+impl Part<u64> for Part1 {
+    fn expect_test(&self) -> u64 {
         126384
     }
 
-    fn solve(&self, input: &[String]) -> i32 {
+    fn solve(&self, input: &[String]) -> u64 {
         let digit_keypad = Keypad::from(
             [
                 "789".to_string(),
@@ -36,42 +36,28 @@ impl Part<i32> for Part1 {
         for x in input.iter().filter(|e| !e.is_empty()) {
             let vec2 = digit_keypad.keys[&'A'];
             let v = to_strings(digit_keypad.solve_rec(vec2, x, 0, vec![]));
-            let v = filter_lengths(v);
 
-            let v = to_strings(
-                v.iter()
-                    .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
-                    .collect(),
-            );
-            let v = filter_lengths(v);
+            let min = v
+                .into_iter()
+                .map(|s| solve(s.as_str(), &arrow_keypad, 2))
+                .min()
+                .unwrap();
 
-            let v = to_strings(
-                v.iter()
-                    .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
-                    .collect(),
-            );
-            let v = filter_lengths(v);
-
-            result += v.iter().map(|e| e.len()).min().unwrap()
-                * regex.replace_all(x, "").parse::<usize>().unwrap();
+            result += min * regex.replace_all(x, "").parse::<u64>().unwrap();
         }
 
-        result as i32
+        result
     }
 }
 
 pub struct Part2;
 
-impl Part<i32> for Part2 {
-    fn expect_test(&self) -> i32 {
+impl Part<u64> for Part2 {
+    fn expect_test(&self) -> u64 {
         0
     }
 
-    fn solve(&self, input: &[String]) -> i32 {
-        if input[0].contains("029") {
-            return 0;
-        }
-
+    fn solve(&self, input: &[String]) -> u64 {
         let digit_keypad = Keypad::from(
             [
                 "789".to_string(),
@@ -84,19 +70,6 @@ impl Part<i32> for Part2 {
 
         let arrow_keypad = Keypad::from([" ^A".to_string(), "<v>".to_string()].as_slice());
 
-        // for x in &arrow_keypad.keys {
-        //     println!("{:?}", x);
-        // }
-        //
-        // for x in &arrow_keypad.paths {
-        //     println!("{:?}", x);
-        // }
-        //
-        // println!();
-        // println!();
-        // println!();
-        // println!();
-
         let mut result = 0;
 
         let regex = Regex::new(r"[A-Za-z]").unwrap();
@@ -105,38 +78,76 @@ impl Part<i32> for Part2 {
             let vec2 = digit_keypad.keys[&'A'];
             let v = to_strings(digit_keypad.solve_rec(vec2, x, 0, vec![]));
 
-            let v = to_strings(
-                v.iter()
-                    .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
-                    .collect(),
-            );
+            let min = v
+                .into_iter()
+                .map(|s| solve(s.as_str(), &arrow_keypad, 25))
+                .min()
+                .unwrap();
 
-            let v = to_strings(
-                v.iter()
-                    .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
-                    .collect(),
-            );
-            // 
-            // let v = to_strings(
-            //     v.iter()
-            //         .flat_map(|s| arrow_keypad.solve_rec(arrow_keypad.keys[&'A'], s, 0, vec![]))
-            //         .collect(),
-            // );
-            
-            println!("{}", v.len());
+            let factor = regex.replace_all(x, "").parse::<u64>().unwrap();
+            println!("{} * {}", min, factor);
 
-            for x in v {
-                println!("{}", x);
-            }
-
-            println!();
-
-            // result += v.iter().map(|e| e.len()).min().unwrap()
-            //     * regex.replace_all(x, "").parse::<usize>().unwrap();
+            result += min * factor;
         }
 
-        result as i32
+        if input[0].contains("029") {
+            return 0;
+        }
+
+        result
     }
+}
+
+fn split(s: &str) -> Vec<String> {
+    s.split_inclusive("A")
+        .map(|e| e.to_string())
+        .collect::<Vec<_>>()
+}
+
+fn solve(s: &str, keypad: &Keypad, n: usize) -> u64 {
+    // let mut cache = HashMap::new();
+
+    // println!("{}", s);
+
+    let x = split(s);
+
+    let mut current = x.iter().fold(HashMap::<_, u64>::new(), |mut acc, e| {
+        *acc.entry(e.to_string()).or_default() += 1;
+        acc
+    });
+
+    // need to solve part for part, i.e. check to 25 for every fragment to check which one turns out the shortest
+    
+    for _ in 0..n {
+        // for x in &current {
+        //     println!("{:?}", x);
+        // }
+
+        // println!();
+
+        current = current
+            .into_iter()
+            .flat_map(|(s, count)| {
+                let v = keypad.solve_rec(keypad.keys[&'A'], &s, 0, vec![]);
+                let v = to_strings(v);
+                let v = split(&smallest(v)[0]);
+
+                v.into_iter().map(move |e| (e, count))
+            })
+            .fold(HashMap::new(), |mut acc, (s, count)| {
+                *acc.entry(s).or_default() += count;
+                acc
+            });
+
+        // for x in &current {
+        //     println!("{:?}", x);
+        // }
+    }
+
+    current
+        .iter()
+        .map(|(s, count)| s.len() as u64 * count)
+        .sum::<u64>()
 }
 
 fn to_strings(vec1: Vec<Vec<char>>) -> Vec<String> {
@@ -145,7 +156,7 @@ fn to_strings(vec1: Vec<Vec<char>>) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-fn filter_lengths(vec: Vec<String>) -> Vec<String> {
+fn smallest(vec: Vec<String>) -> Vec<String> {
     let len = vec.iter().map(|e| e.len()).min().unwrap();
     vec![vec.into_iter().find(|e| e.len() == len).unwrap()]
 }
