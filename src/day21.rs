@@ -1,7 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
 use regex::Regex;
-use std::cmp::min;
 use std::collections::HashMap;
 use std::iter;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub};
@@ -18,37 +17,7 @@ impl Part<u64> for Part1 {
     }
 
     fn solve(&self, input: &[String]) -> u64 {
-        let digit_keypad = Keypad::from(
-            [
-                "789".to_string(),
-                "456".to_string(),
-                "123".to_string(),
-                " 0A".to_string(),
-            ]
-            .as_slice(),
-        );
-
-        let arrow_keypad = Keypad::from([" ^A".to_string(), "<v>".to_string()].as_slice());
-
-        let mut result = 0;
-
-        let regex = Regex::new(r"[A-Za-z]").unwrap();
-
-        for x in input.iter().filter(|e| !e.is_empty()) {
-            let v = digit_keypad.solve_rec('A', x, 0, &mut String::new());
-
-            let min = v
-                .into_iter()
-                .map(|s| solve(s.as_str(), &arrow_keypad, 2))
-                .min()
-                .unwrap();
-
-            let factor = regex.replace_all(x, "").parse::<u64>().unwrap();
-
-            result += min * factor;
-        }
-
-        result
+        solve(input, 2)
     }
 }
 
@@ -61,40 +30,10 @@ impl Part<u64> for Part2 {
 
     fn solve(&self, input: &[String]) -> u64 {
         if input[0].contains("029") {
-            return 0;
+            0
+        } else {
+            solve(input, 25)
         }
-
-        let digit_keypad = Keypad::from(
-            [
-                "789".to_string(),
-                "456".to_string(),
-                "123".to_string(),
-                " 0A".to_string(),
-            ]
-            .as_slice(),
-        );
-
-        let arrow_keypad = Keypad::from([" ^A".to_string(), "<v>".to_string()].as_slice());
-
-        let mut result = 0;
-
-        let regex = Regex::new(r"[A-Za-z]").unwrap();
-
-        for x in input.iter().filter(|e| !e.is_empty()) {
-            let v = digit_keypad.solve_rec('A', x, 0, &mut String::new());
-
-            let min = v
-                .into_iter()
-                .map(|s| solve(s.as_str(), &arrow_keypad, 25))
-                .min()
-                .unwrap();
-
-            let factor = regex.replace_all(x, "").parse::<u64>().unwrap();
-
-            result += min * factor;
-        }
-
-        result
     }
 }
 
@@ -104,12 +43,36 @@ fn split(s: &str) -> Vec<String> {
         .collect::<Vec<_>>()
 }
 
-fn solve(s: &str, keypad: &Keypad, n: usize) -> u64 {
-    let mut cache = HashMap::<(String, usize), u64>::new();
+fn solve(input: &[String], n: usize) -> u64 {
+    let digit_keypad = Keypad::from(["789", "456", "123", " 0A"].as_slice());
+    let arrow_keypad = Keypad::from([" ^A", "<v>"].as_slice());
+
+    let regex = Regex::new(r"[A-Za-z]").unwrap();
+
+    input
+        .iter()
+        .filter(|e| !e.is_empty())
+        .map(|s| {
+            let min = digit_keypad
+                .solve('A', s, 0, &mut String::new())
+                .into_iter()
+                .map(|s| solve_2_rec_entry(s.as_str(), &arrow_keypad, n))
+                .min()
+                .unwrap();
+
+            let factor = regex.replace_all(s, "").parse::<u64>().unwrap();
+
+            min * factor
+        })
+        .sum()
+}
+
+fn solve_2_rec_entry(s: &str, keypad: &Keypad, n: usize) -> u64 {
+    let mut cache = HashMap::new();
 
     split(s)
         .iter()
-        .fold(HashMap::<_, u64>::new(), |mut acc, e| {
+        .fold(HashMap::new(), |mut acc, e| {
             *acc.entry(e.to_string()).or_default() += 1;
             acc
         })
@@ -137,33 +100,29 @@ fn solve_2_rec(
 
     let (fragment, depth) = key;
 
-    let vec = keypad.solve_rec('A', fragment.as_str(), 0, &mut String::new());
+    let result = keypad
+        .solve('A', fragment.as_str(), 0, &mut String::new())
+        .into_iter()
+        .map(|x| {
+            split(&x)
+                .into_iter()
+                .map(|s| solve_2_rec(keypad, depth - 1, s, count, cache))
+                .sum::<u64>()
+        })
+        .min()
+        .unwrap();
 
-    let mut mn = u64::MAX;
+    cache.insert((fragment, depth), result);
 
-    for x in &vec {
-        let paths = split(x);
-
-        let x1 = paths
-            .into_iter()
-            .map(|s| solve_2_rec(keypad, depth - 1, s, count, cache))
-            .sum::<u64>();
-
-        mn = min(mn, x1);
-    }
-
-    cache.insert((fragment, depth), mn);
-
-    mn
+    result
 }
 
 struct Keypad {
-    keys: HashMap<char, Vec2>,
     paths: HashMap<(char, char), Vec<String>>,
 }
 
 impl Keypad {
-    fn solve_rec(
+    fn solve(
         &self,
         position: char,
         sequence: &str,
@@ -178,9 +137,9 @@ impl Keypad {
 
         self.paths[&(position, target)]
             .iter()
-            .flat_map(|(path)| {
+            .flat_map(|path| {
                 running_result.push_str(path);
-                let result = self.solve_rec(target, sequence, index + 1, running_result);
+                let result = self.solve(target, sequence, index + 1, running_result);
                 running_result.truncate(running_result.len() - path.len());
 
                 result
@@ -189,8 +148,8 @@ impl Keypad {
     }
 }
 
-impl From<&[String]> for Keypad {
-    fn from(value: &[String]) -> Self {
+impl From<&[&str]> for Keypad {
+    fn from(value: &[&str]) -> Self {
         let keys = value
             .iter()
             .filter(|e| !e.is_empty())
@@ -255,7 +214,7 @@ impl From<&[String]> for Keypad {
             }
         }
 
-        Keypad { keys, paths }
+        Keypad { paths }
     }
 }
 
