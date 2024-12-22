@@ -1,9 +1,8 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::collections::{HashMap, HashSet};
-use std::ops::{BitXor, Shl};
+use std::ops::BitXor;
 
-pub fn day22() -> Day<u64, u64> {
+pub fn day22() -> Day<u64, u32> {
     Day::new(22, Box::new(Part1 {}), Box::new(Part2 {}))
 }
 
@@ -25,65 +24,42 @@ impl Part<u64> for Part1 {
 
 pub struct Part2;
 
-impl Part<u64> for Part2 {
-    fn expect_test(&self) -> u64 {
+impl Part<u32> for Part2 {
+    fn expect_test(&self) -> u32 {
         23
     }
 
-    fn solve(&self, input: &[String]) -> u64 {
+    fn solve(&self, input: &[String]) -> u32 {
         let input = Input::from(input).vec;
 
-        
-        let result = input
-            .into_iter()
-            .map(|e| {
-                // println!("--------");
-                Secret(e)
-                    .take(2001)
-                    .map(|u| u % 10)
-                    .collect::<Vec<_>>()
-                    .windows(5)
-                    .map(|window| {
-                        let diffs = window
-                            .windows(2)
-                            .map(|pair| pair[1] as i32 - pair[0] as i32)
-                            .collect::<Vec<i32>>();
+        const MAX_ID: usize = 19 * 19 * 19 * 19;
 
-                        let a: i32 = (diffs[0] + 9);
-                        let b: i32 = (diffs[1] + 9) * 18;
-                        let c: i32 = (diffs[2] + 9) * 18 * 18;
-                        let d: i32 = (diffs[3] + 9) * 18 * 18 * 18;
-                        let id = (a + b + c + d) as u32;
-                        (id, window[4])
-                    })
-                    .fold(HashMap::new(), |mut acc, (id, result)| {
-                        acc.entry(id).or_insert(result);
-                        acc
-                    })
-            })
-            .collect::<Vec<_>>();
+        let mut result = [0; MAX_ID];
 
-        let keys = result
-            .iter()
-            .flat_map(|e| e.keys())
-            .cloned()
-            .collect::<HashSet<_>>();
+        for e in input {
+            let mut closed = [false; MAX_ID];
 
-        let mut best = 0;
+            Secret(e)
+                .take(2001)
+                .map(|u| (u % 10) as u32)
+                .collect::<Vec<_>>()
+                .windows(5)
+                .for_each(|window| {
+                    let id = window
+                        .windows(2)
+                        .map(|pair| pair[1] + 9 - pair[0])
+                        .enumerate()
+                        .map(|(i, e)| e * 19_u32.pow(i as u32))
+                        .sum::<u32>() as usize;
 
-        for id in keys {
-            let r = result
-                .iter()
-                .map(|e| e.get(&id).cloned().unwrap_or_default())
-                .sum::<u64>();
-
-            if r >= best {
-                best = r;
-                best_seq = Some(id);
-            }
+                    if !closed[id] {
+                        closed[id] = true;
+                        result[id] += window[4] as u16;
+                    }
+                })
         }
 
-        best
+        result.into_iter().max().unwrap() as u32
     }
 }
 
@@ -100,22 +76,15 @@ impl Iterator for Secret {
 }
 
 fn evolve(mut secret: u64) -> u64 {
-    secret = mix(secret, secret * 64);
-    secret = prune(secret);
-    secret = mix(secret, secret / 32);
-    secret = prune(secret);
-    secret = mix(secret, secret * 2048);
-    secret = prune(secret);
+    secret = evolve_step(secret, secret * 64);
+    secret = evolve_step(secret, secret / 32);
+    secret = evolve_step(secret, secret * 2048);
 
     secret
 }
 
-fn mix(secret: u64, u: u64) -> u64 {
-    u.bitxor(secret)
-}
-
-fn prune(u: u64) -> u64 {
-    u % 16777216
+fn evolve_step(secret: u64, u: u64) -> u64 {
+    u.bitxor(secret) % 16777216
 }
 
 struct Input {
