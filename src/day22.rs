@@ -49,9 +49,11 @@ impl Part<u32> for Part2 {
                         .map(|(i, e)| e * 19_u32.pow(i as u32))
                         .sum::<u32>() as usize;
 
-                    if !closed[id] {
-                        closed[id] = true;
-                        result[id] += window[4] as u16;
+                    unsafe {
+                        if !closed.get_unchecked(id) {
+                            *closed.get_unchecked_mut(id) = true;
+                            *result.get_unchecked_mut(id) += window[4] as u16;
+                        }
                     }
                 })
         }
