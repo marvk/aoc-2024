@@ -14,10 +14,9 @@ impl Part<u64> for Part1 {
     }
 
     fn solve(&self, input: &[String]) -> u64 {
-        Input::from(input)
-            .vec
-            .into_iter()
+        parse(input)
             .map(|u| Secret(u).take(2001).last().unwrap())
+            .map(|u| u as u64)
             .sum::<u64>()
     }
 }
@@ -30,18 +29,16 @@ impl Part<u32> for Part2 {
     }
 
     fn solve(&self, input: &[String]) -> u32 {
-        let input = Input::from(input).vec;
-
         const MAX_ID: usize = 19 * 19 * 19 * 19;
 
         let mut result = [0; MAX_ID];
 
-        for e in input {
+        for e in parse(input) {
             let mut closed = [false; MAX_ID];
 
             Secret(e)
                 .take(2001)
-                .map(|u| (u % 10) as u32)
+                .map(|u| u % 10)
                 .collect::<Vec<_>>()
                 .windows(5)
                 .for_each(|window| {
@@ -63,10 +60,10 @@ impl Part<u32> for Part2 {
     }
 }
 
-struct Secret(u64);
+struct Secret(u32);
 
 impl Iterator for Secret {
-    type Item = u64;
+    type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
         let result = self.0;
@@ -75,7 +72,7 @@ impl Iterator for Secret {
     }
 }
 
-fn evolve(mut secret: u64) -> u64 {
+fn evolve(mut secret: u32) -> u32 {
     secret = evolve_step(secret, secret * 64);
     secret = evolve_step(secret, secret / 32);
     secret = evolve_step(secret, secret * 2048);
@@ -83,22 +80,13 @@ fn evolve(mut secret: u64) -> u64 {
     secret
 }
 
-fn evolve_step(secret: u64, u: u64) -> u64 {
+fn evolve_step(secret: u32, u: u32) -> u32 {
     u.bitxor(secret) % 16777216
 }
 
-struct Input {
-    vec: Vec<u64>,
-}
-
-impl From<&[String]> for Input {
-    fn from(value: &[String]) -> Self {
-        let vec = value
-            .iter()
-            .filter(|s| !s.is_empty())
-            .map(|s| s.parse::<u64>().unwrap())
-            .collect();
-
-        Self { vec }
-    }
+fn parse(value: &[String]) -> impl Iterator<Item = u32> + '_ {
+    value
+        .iter()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.parse::<u32>().unwrap())
 }
