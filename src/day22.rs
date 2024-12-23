@@ -15,8 +15,7 @@ impl Part<u64> for Part1 {
 
     fn solve(&self, input: &[String]) -> u64 {
         parse(input)
-            .map(|u| Secret(u).take(2001).last().unwrap())
-            .map(|u| u as u64)
+            .map(|u| Secret(u).nth(2000).unwrap() as u64)
             .sum::<u64>()
     }
 }
