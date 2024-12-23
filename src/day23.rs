@@ -14,7 +14,11 @@ impl Part<u32> for Part1 {
     }
 
     fn solve(&self, input: &[String]) -> u32 {
-        Input::from(input).clique_3().len() as u32
+        Input::from(input)
+            .clique_3()
+            .iter()
+            .filter(|vec| vec.iter().any(|s| s.starts_with('t')))
+            .count() as u32
     }
 }
 
@@ -110,10 +114,8 @@ impl<'a> Input<'a> {
                 for &computer_3 in connections_1.intersection(connections_2) {
                     let mut clique = vec![computer_1, computer_2, computer_3];
 
-                    if clique.iter().any(|c| c.starts_with('t')) {
-                        clique.sort();
-                        result.insert(clique);
-                    }
+                    clique.sort();
+                    result.insert(clique);
                 }
             }
         }
