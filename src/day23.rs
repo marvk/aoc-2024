@@ -117,6 +117,7 @@ impl<'a> Input<'a> {
                 }
             }
         }
+
         result
     }
 }
