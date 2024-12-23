@@ -76,6 +76,14 @@ impl<'a> Input<'a> {
         let mut result = HashSet::new();
 
         for mut clique in self.clique_3() {
+            // skip sub cliques that already have their maximal clique calculated
+            if result
+                .iter()
+                .any(|max_clique: &Vec<_>| clique.iter().all(|e| max_clique.contains(e)))
+            {
+                continue;
+            }
+
             for &candidate in &self.computers {
                 if clique
                     .iter()
