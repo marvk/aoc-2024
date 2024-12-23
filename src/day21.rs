@@ -71,10 +71,10 @@ impl Keypad {
     fn solve_one_sequence<'a>(
         &'a self,
         position: char,
-        sequence: &str,
+        sequence: &'a str,
         index: usize,
         running_result: &mut Vec<&'a str>,
-        fragment_cache: &mut HashMap<String, Vec<Vec<&'a str>>>,
+        fragment_cache: &mut HashMap<&'a str, Vec<Vec<&'a str>>>,
     ) -> Vec<Vec<&str>> {
         if index == 0 {
             if let Some(result) = fragment_cache.get(sequence) {
@@ -105,22 +105,22 @@ impl Keypad {
             })
             .collect::<Vec<_>>();
 
-        fragment_cache.insert(sequence.to_string(), result.clone());
+        fragment_cache.insert(sequence, result.clone());
 
         result
     }
 
     fn solve_full_sequence<'a>(
         &'a self,
-        s: Vec<&str>,
+        s: Vec<&'a str>,
         n: usize,
-        fragment_cache: &mut HashMap<String, Vec<Vec<&'a str>>>,
+        fragment_cache: &mut HashMap<&'a str, Vec<Vec<&'a str>>>,
     ) -> u64 {
         let mut full_cache = HashMap::new();
 
         s.iter()
-            .fold(HashMap::new(), |mut acc, e| {
-                *acc.entry(e.to_string()).or_default() += 1;
+            .fold(HashMap::new(), |mut acc, &e| {
+                *acc.entry(e).or_default() += 1;
                 acc
             })
             .into_iter()
@@ -133,10 +133,10 @@ impl Keypad {
     fn solve_full_sequence_rec<'a>(
         &'a self,
         depth: usize,
-        fragment: String,
+        fragment: &'a str,
         count: u64,
-        full_cache: &mut HashMap<(String, usize), u64>,
-        fragment_cache: &mut HashMap<String, Vec<Vec<&'a str>>>,
+        full_cache: &mut HashMap<(&'a str, usize), u64>,
+        fragment_cache: &mut HashMap<&'a str, Vec<Vec<&'a str>>>,
     ) -> u64 {
         if depth == 0 {
             return fragment.len() as u64 * count;
@@ -151,14 +151,14 @@ impl Keypad {
         let (fragment, depth) = key;
 
         let result = self
-            .solve_one_sequence('A', fragment.as_str(), 0, &mut vec![], fragment_cache)
+            .solve_one_sequence('A', fragment, 0, &mut vec![], fragment_cache)
             .into_iter()
             .map(|x| {
                 x.iter()
                     .map(|s| {
                         self.solve_full_sequence_rec(
                             depth - 1,
-                            s.to_string(),
+                            s,
                             count,
                             full_cache,
                             fragment_cache,
