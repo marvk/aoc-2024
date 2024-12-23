@@ -14,10 +14,15 @@ impl Part<u32> for Part1 {
     }
 
     fn solve(&self, input: &[String]) -> u32 {
-        Input::from(input)
+        let input = Input::from(input);
+
+        input
             .clique_3()
             .iter()
-            .filter(|vec| vec.iter().any(|s| s.starts_with('t')))
+            .filter(|vec| {
+                vec.iter()
+                    .any(|id| input.computers_reverse[id].starts_with('t'))
+            })
             .count() as u32
     }
 }
@@ -30,24 +35,37 @@ impl Part<String> for Part2 {
     }
 
     fn solve(&self, input: &[String]) -> String {
-        Input::from(input)
+        let input = Input::from(input);
+
+        let mut result = input
             .clique_max()
             .into_iter()
             .max_by_key(|vec| vec.len())
             .unwrap()
+            .iter()
+            .map(|id| input.computers_reverse[id])
+            .collect::<Vec<_>>();
+        
+        result.sort();
+        
+        result
             .join(",")
             .to_string()
     }
 }
 
 struct Input<'a> {
-    computers: Vec<&'a str>,
-    connections: HashMap<&'a str, HashSet<&'a str>>,
+    computers_reverse: HashMap<usize, &'a str>,
+    connections: HashMap<usize, HashSet<usize>>,
 }
 
 impl<'a> From<&'a [String]> for Input<'a> {
     fn from(value: &'a [String]) -> Self {
-        let mut computers = HashSet::new();
+        let mut id = 0_usize;
+
+        let mut computers = HashMap::new();
+        let mut computers_reverse = HashMap::new();
+
         let connections = value
             .iter()
             .filter(|e| !e.is_empty())
@@ -56,27 +74,39 @@ impl<'a> From<&'a [String]> for Input<'a> {
                 let a = e.next().unwrap();
                 let b = e.next().unwrap();
 
-                computers.insert(a);
-                computers.insert(b);
+                let a_id = *computers.entry(a).or_insert_with(|| {
+                    let r = id;
+                    computers_reverse.insert(r, a);
+                    id += 1;
+                    r
+                });
 
-                acc.entry(a).or_default().insert(b);
-                acc.entry(b).or_default().insert(a);
+                let b_id = *computers.entry(b).or_insert_with(|| {
+                    let r = id;
+                    computers_reverse.insert(r, b);
+                    id += 1;
+                    r
+                });
+
+                acc.entry(a_id).or_default().insert(b_id);
+                acc.entry(b_id).or_default().insert(a_id);
 
                 acc
             });
 
-        let mut computers = computers.into_iter().collect::<Vec<_>>();
-        computers.sort();
-
         Self {
-            computers,
+            computers_reverse,
             connections,
         }
     }
 }
 
 impl<'a> Input<'a> {
-    fn clique_max(&'a self) -> HashSet<Vec<&'a str>> {
+    fn num_computers(&self) -> usize {
+        self.computers_reverse.len()
+    }
+    
+    fn clique_max(&'a self) -> HashSet<Vec<usize>> {
         let mut result = HashSet::new();
 
         for mut clique in self.clique_3() {
@@ -88,10 +118,10 @@ impl<'a> Input<'a> {
                 continue;
             }
 
-            for &candidate in &self.computers {
+            for candidate in 0..self.num_computers() {
                 if clique
                     .iter()
-                    .all(|&computer| self.connections[computer].contains(candidate))
+                    .all(|&computer| self.connections[&computer].contains(&candidate))
                 {
                     clique.push(candidate);
                 }
@@ -104,12 +134,12 @@ impl<'a> Input<'a> {
         result
     }
 
-    fn clique_3(&'a self) -> HashSet<Vec<&'a str>> {
+    fn clique_3(&'a self) -> HashSet<Vec<usize>> {
         let mut result = HashSet::new();
 
         for (&computer_1, connections_1) in &self.connections {
             for &computer_2 in connections_1 {
-                let connections_2 = self.connections.get(computer_2).unwrap();
+                let connections_2 = self.connections.get(&computer_2).unwrap();
 
                 for &computer_3 in connections_1.intersection(connections_2) {
                     let mut clique = vec![computer_1, computer_2, computer_3];
