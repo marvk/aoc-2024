@@ -2,6 +2,7 @@ use crate::harness::Day;
 use crate::harness::Part;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
+use std::mem::swap;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 pub fn day24() -> Day<u64, String> {
@@ -74,137 +75,208 @@ impl Part<String> for Part2 {
         if input.len() < 100 {
             return "".to_string();
         }
+        let input = Input::from(input);
 
-        let mut input = Input::from(input);
+        let (mut broken_gates, adders) = solve(input.clone());
 
-        input.gate(152).result = "qdg";
-        input.gate(197).result = "z12";
-
-        input.gate(145).result = "vvf";
-        input.gate(82).result = "z19";
-
-        input.gate(184).result = "fgn";
-        input.gate(5).result = "dck";
-
-        input.gate(178).result = "z37";
-        input.gate(120).result = "nvh";
-
-        let mut adders = (0..46).map(|_| FullAdder::default()).collect::<Vec<_>>();
-
-        let mut broken_gates = vec![];
-
-        let mut i = 0;
-        while i < input.gates.len() {
-            let gate = &input.gates[i];
-
-            if gate.operand1.starts_with('x') && gate.operand2.starts_with('y') {
-                let id = gate.operand1[1..].parse::<usize>().unwrap();
-                if gate.result.starts_with('z') {
-                    broken_gates.push(input.gates.remove(i));
-                } else {
-                    match gate.operator {
-                        Operator::AND => {
-                            adders[id].half_adder1.and = Some(input.gates.remove(i));
-                        }
-                        Operator::XOR => {
-                            adders[id].half_adder1.xor = Some(input.gates.remove(i));
-                        }
-                        Operator::OR => {
-                            broken_gates.push(input.gates.remove(i));
-                        }
-                    }
-                }
-            } else {
-                i += 1;
-            }
-        }
-
-        let mut i = 0;
-
-        while i < input.gates.len() {
-            let gate = &input.gates[i];
-
-            if gate.result.starts_with('z') {
-                let id = gate.result[1..].parse::<usize>().unwrap();
-
-                if let Some(xor1) = &adders[id].half_adder1.xor {
-                    if xor1.result != gate.operand1 && xor1.result != gate.operand2 {
-                        broken_gates.push(input.gates.remove(i));
-                        continue;
-                    }
-                }
-
-                match gate.operator {
-                    Operator::XOR => {
-                        adders[id].half_adder2.xor = Some(input.gates.remove(i));
-                    }
-                    _ => {
-                        broken_gates.push(input.gates.remove(i));
-                    }
-                }
-            } else {
-                i += 1;
-            }
-        }
-
-        for x in &mut adders {
-            if let Some(xor) = &x.half_adder1.xor {
-                let position = input.gates.iter().position(|e| {
-                    matches!(e.operator, Operator::AND)
-                        && (xor.result == e.operand1 || xor.result == e.operand2)
+        for x in adders {
+            if !x.is_complete() {
+                x.or.and_then(|g| {
+                    broken_gates.push(g);
+                    Some(())
                 });
 
-                if let Some(position) = position {
-                    let gate2 = input.gates.remove(position);
-                    println!("{}", gate2);
-                    x.half_adder2.and = Some(gate2);
-                }
-            }
-        }
-
-        for x in &mut adders {
-            if let Some(and) = &x.half_adder2.and {
-                let position = input.gates.iter().position(|e| {
-                    matches!(e.operator, Operator::OR)
-                        && (and.result == e.operand1 || and.result == e.operand2)
+                x.half_adder1.and.and_then(|g| {
+                    broken_gates.push(g);
+                    Some(())
                 });
 
-                if let Some(position) = position {
-                    x.or = Some(input.gates.remove(position));
-                }
+                x.half_adder1.xor.and_then(|g| {
+                    broken_gates.push(g);
+                    Some(())
+                });
+
+                x.half_adder2.and.and_then(|g| {
+                    broken_gates.push(g);
+                    Some(())
+                });
+
+                x.half_adder2.xor.and_then(|g| {
+                    broken_gates.push(g);
+                    Some(())
+                });
             }
         }
-
-        println!("{}", input.gates.len());
-
-        for x in &adders {
-            println!("{}", x);
-            if let Some(xor1) = &x.half_adder1.xor {
-                if let Some(xor2) = &x.half_adder2.xor {
-                    if xor1.result != xor2.operand1 && xor1.result != xor2.operand2 {
-                        panic!("AHH {}", &x);
-                    }
-                }
-            }
-        }
-
-        println!("---------");
 
         for x in broken_gates {
             println!("{}", x);
         }
 
-        println!("---------");
+        // for i in 0..broken_gates.len() {
+        //     for j in 0..broken_gates.len() {
+        //         if i == j {
+        //             continue;
+        //         }
+        //
+        //         let mut current_input = input.clone();
+        //
+        //         let id1 = broken_gates[i].id;
+        //         let id2 = broken_gates[j].id;
+        //
+        //         current_input.gate(id1).result = broken_gates[j].result;
+        //         current_input.gate(id2).result = broken_gates[i].result;
+        //
+        //         todo!()
+        //     }
+        // }
+        //
+        // for x in good_swaps {
+        //     println!("{:?}", x);
+        // }
 
-        for x in input.gates {
-            println!("{}", x);
-        }
+        panic!();
 
-        let mut result = ["qdg", "z12", "vvf", "z19", "fgn", "dck", "z37", "nvh"];
-        result.sort();
-        result.join(",")
+        let mut broken = broken_gates.iter().map(|e| e.result).collect::<Vec<_>>();
+        broken.sort();
+        broken.join(",")
     }
 }
+
+fn solve(mut input: Input) -> (Vec<Gate>, Vec<FullAdder>) {
+    // input.gate(152).result = "qdg";
+    // input.gate(197).result = "z12";
+    //
+    // input.gate(145).result = "vvf";
+    // input.gate(82).result = "z19";
+    //
+    // input.gate(184).result = "fgn";
+    // input.gate(5).result = "dck";
+    //
+    // input.gate(178).result = "z37";
+    // input.gate(120).result = "nvh";
+
+    let mut adders = (0..46).map(|_| FullAdder::default()).collect::<Vec<_>>();
+
+    let mut broken_gates = vec![];
+
+    let mut i = 0;
+    while i < input.gates.len() {
+        let gate = &input.gates[i];
+
+        if gate.operand1.starts_with('x') && gate.operand2.starts_with('y') {
+            let id = gate.operand1[1..].parse::<usize>().unwrap();
+            if gate.result.starts_with('z') {
+                broken_gates.push(input.gates.remove(i));
+            } else {
+                match gate.operator {
+                    Operator::AND => {
+                        adders[id].half_adder1.and = Some(input.gates.remove(i));
+                    }
+                    Operator::XOR => {
+                        adders[id].half_adder1.xor = Some(input.gates.remove(i));
+                    }
+                    Operator::OR => {
+                        broken_gates.push(input.gates.remove(i));
+                    }
+                }
+            }
+        } else {
+            i += 1;
+        }
+    }
+
+    let mut i = 0;
+
+    while i < input.gates.len() {
+        let gate = &input.gates[i];
+
+        if gate.result.starts_with('z') {
+            let id = gate.result[1..].parse::<usize>().unwrap();
+
+            if let Some(xor1) = &adders[id].half_adder1.xor {
+                if xor1.result != gate.operand1 && xor1.result != gate.operand2 {
+                    broken_gates.push(input.gates.remove(i));
+                    continue;
+                }
+            }
+
+            match gate.operator {
+                Operator::XOR => {
+                    adders[id].half_adder2.xor = Some(input.gates.remove(i));
+                }
+                _ => {
+                    broken_gates.push(input.gates.remove(i));
+                }
+            }
+        } else {
+            i += 1;
+        }
+    }
+
+    for x in &mut adders {
+        if let Some(xor) = &x.half_adder1.xor {
+            let position = input.gates.iter().position(|e| {
+                matches!(e.operator, Operator::AND)
+                    && (xor.result == e.operand1 || xor.result == e.operand2)
+            });
+
+            if let Some(position) = position {
+                let gate2 = input.gates.remove(position);
+                x.half_adder2.and = Some(gate2);
+            }
+        }
+    }
+
+    for x in &mut adders {
+        if let Some(and) = &x.half_adder2.and {
+            let position = input.gates.iter().position(|e| {
+                matches!(e.operator, Operator::OR)
+                    && (and.result == e.operand1 || and.result == e.operand2)
+            });
+
+            if let Some(position) = position {
+                x.or = Some(input.gates.remove(position));
+            }
+        }
+    }
+
+    // println!("{}", input.gates.len());
+    //
+    // for x in &adders {
+    //     println!("{}", x);
+    //     if let Some(xor1) = &x.half_adder1.xor {
+    //         if let Some(xor2) = &x.half_adder2.xor {
+    //             if xor1.result != xor2.operand1 && xor1.result != xor2.operand2 {
+    //                 panic!("AHH {}", &x);
+    //             }
+    //         }
+    //     }
+    // }
+
+    // println!("---------");
+    //
+    // for x in broken_gates {
+    //     println!("{}", x);
+    // }
+    //
+    // println!("---------");
+    //
+    // for x in input.gates {
+    //     println!("{}", x);
+    // }<
+    //
+    // let mut result = ["qdg", "z12", "vvf", "z19", "fgn", "dck", "z37", "nvh"];
+    // result.sort();
+    // result.join(",")
+
+    (
+        input.gates.into_iter().chain(broken_gates).collect(),
+        adders,
+    )
+}
+
+
+
 
 #[derive(Default, Debug)]
 struct HalfAdder<'a> {
@@ -225,6 +297,18 @@ struct FullAdder<'a> {
     or: Option<Gate<'a>>,
 }
 
+impl<'a> HalfAdder<'a> {
+    fn is_compete(&self) -> bool {
+        self.xor.is_some() && self.and.is_some()
+    }
+}
+
+impl<'a> FullAdder<'a> {
+    fn is_complete(&self) -> bool {
+        self.or.is_some() && self.half_adder1.is_compete() && self.half_adder2.is_compete()
+    }
+}
+
 impl<'a> Display for FullAdder<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -235,7 +319,7 @@ impl<'a> Display for FullAdder<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 enum Operator {
     AND,
     OR,
@@ -255,6 +339,7 @@ impl TryFrom<&str> for Operator {
     }
 }
 
+#[derive(Clone)]
 struct Gate<'a> {
     id: usize,
     operand1: &'a str,
@@ -279,7 +364,7 @@ impl<'a> Display for Gate<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Input<'a> {
     initial: HashMap<&'a str, bool>,
     gates: Vec<Gate<'a>>,
