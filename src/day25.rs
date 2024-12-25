@@ -2,7 +2,7 @@ use crate::harness::Day;
 use crate::harness::Part;
 use std::ops::{BitOr, Shl};
 
-pub fn day25() -> Day<u32, i32> {
+pub fn day25() -> Day<u32, ()> {
     Day::new(25, Box::new(Part1 {}), Box::new(Part2 {}))
 }
 
@@ -20,8 +20,7 @@ impl Part<u32> for Part1 {
 
         for lock in &input.locks {
             for key in &input.keys {
-                let ones = lock.0.count_ones() + key.0.count_ones();
-                if lock.0.bitor(key.0).count_ones() == ones {
+                if key.fits(lock) {
                     result += 1;
                 }
             }
@@ -33,22 +32,21 @@ impl Part<u32> for Part1 {
 
 pub struct Part2;
 
-impl Part<i32> for Part2 {
-    fn expect_test(&self) -> i32 {
-        todo!()
-    }
+impl Part<()> for Part2 {
+    fn expect_test(&self) {}
 
-    fn solve(&self, input: &[String]) -> i32 {
-        todo!()
-    }
+    fn solve(&self, _input: &[String]) {}
 }
 
 #[derive(Debug)]
-struct Schematic(u32);
+struct Schematic {
+    pattern: u32,
+    ones: u32,
+}
 
 impl From<&[String]> for Schematic {
     fn from(value: &[String]) -> Self {
-        let identifier = value[1..value.len() - 1]
+        let pattern = value[1..value.len() - 1]
             .iter()
             .flat_map(|s| s.chars())
             .enumerate()
@@ -56,7 +54,18 @@ impl From<&[String]> for Schematic {
             .reduce(|a, b| a.bitor(b))
             .unwrap();
 
-        Self(identifier)
+        let ones = pattern.count_ones();
+        
+        Self {
+            pattern,
+            ones,
+        }
+    }
+}
+
+impl Schematic {
+    fn fits(&self, rhs: &Schematic) -> bool {
+        self.pattern.bitor(rhs.pattern).count_ones() == self.ones + rhs.ones
     }
 }
 
