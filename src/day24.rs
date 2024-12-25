@@ -79,82 +79,92 @@ impl Part<String> for Part2 {
 
         let (mut broken_gates, adders) = solve(input.clone());
 
+        let n_broken_gates = broken_gates.len();
+
         for x in adders {
             if !x.is_complete() {
-                x.or.and_then(|g| {
+                x.or.map(|g| {
                     broken_gates.push(g);
                     Some(())
                 });
 
-                x.half_adder1.and.and_then(|g| {
+                x.half_adder1.and.map(|g| {
                     broken_gates.push(g);
                     Some(())
                 });
 
-                x.half_adder1.xor.and_then(|g| {
+                x.half_adder1.xor.map(|g| {
                     broken_gates.push(g);
                     Some(())
                 });
 
-                x.half_adder2.and.and_then(|g| {
+                x.half_adder2.and.map(|g| {
                     broken_gates.push(g);
                     Some(())
                 });
 
-                x.half_adder2.xor.and_then(|g| {
+                x.half_adder2.xor.map(|g| {
                     broken_gates.push(g);
                     Some(())
                 });
             }
         }
 
-        for x in broken_gates {
-            println!("{}", x);
+        let mut good_swaps = vec![];
+
+        for i in 0..broken_gates.len() - 1 {
+            for j in i + 1..broken_gates.len() {
+                let mut current_input = input.clone();
+
+                let id1 = broken_gates[i].id;
+                let id2 = broken_gates[j].id;
+
+                current_input.gate_mut(id1).result = broken_gates[j].result;
+                current_input.gate_mut(id2).result = broken_gates[i].result;
+
+                if solve(current_input).0.len() + 1 < n_broken_gates {
+                    good_swaps.push((id1, id2));
+                }
+            }
         }
 
-        // for i in 0..broken_gates.len() {
-        //     for j in 0..broken_gates.len() {
-        //         if i == j {
-        //             continue;
-        //         }
-        //
-        //         let mut current_input = input.clone();
-        //
-        //         let id1 = broken_gates[i].id;
-        //         let id2 = broken_gates[j].id;
-        //
-        //         current_input.gate(id1).result = broken_gates[j].result;
-        //         current_input.gate(id2).result = broken_gates[i].result;
-        //
-        //         todo!()
-        //     }
-        // }
-        //
-        // for x in good_swaps {
-        //     println!("{:?}", x);
-        // }
+        println!("{:?}", good_swaps);
+        
+        let mut best_count = usize::MAX;
+        let mut best_swaps = [0; 4];
 
-        panic!();
+        for i in 0..good_swaps.len() - 3 {
+            for j in i + 1..good_swaps.len() - 2 {
+                for k in j + 1..good_swaps.len() - 1 {
+                    for l in k + 1..good_swaps.len() {
+                        let mut current_input = input.clone();
 
-        let mut broken = broken_gates.iter().map(|e| e.result).collect::<Vec<_>>();
+                        let swaps = [i, j, k, l];
+
+                        for &x in &swaps {
+                            let (id1, id2) = good_swaps[x];
+
+                            current_input.gate_mut(id1).result = input.gate(id2).result;
+                            current_input.gate_mut(id2).result = input.gate(id1).result;
+                        }
+
+                        let i1 = solve(current_input).0.len();
+                        if i1 < best_count {
+                            best_count = i1;
+                            best_swaps = swaps;
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut broken = best_swaps.into_iter().map(|i| good_swaps[i]).flat_map(|(a, b)| [input.gate(a).result, input.gate(b).result]).collect::<Vec<_>>();
         broken.sort();
         broken.join(",")
     }
 }
 
 fn solve(mut input: Input) -> (Vec<Gate>, Vec<FullAdder>) {
-    // input.gate(152).result = "qdg";
-    // input.gate(197).result = "z12";
-    //
-    // input.gate(145).result = "vvf";
-    // input.gate(82).result = "z19";
-    //
-    // input.gate(184).result = "fgn";
-    // input.gate(5).result = "dck";
-    //
-    // input.gate(178).result = "z37";
-    // input.gate(120).result = "nvh";
-
     let mut adders = (0..46).map(|_| FullAdder::default()).collect::<Vec<_>>();
 
     let mut broken_gates = vec![];
@@ -240,43 +250,11 @@ fn solve(mut input: Input) -> (Vec<Gate>, Vec<FullAdder>) {
         }
     }
 
-    // println!("{}", input.gates.len());
-    //
-    // for x in &adders {
-    //     println!("{}", x);
-    //     if let Some(xor1) = &x.half_adder1.xor {
-    //         if let Some(xor2) = &x.half_adder2.xor {
-    //             if xor1.result != xor2.operand1 && xor1.result != xor2.operand2 {
-    //                 panic!("AHH {}", &x);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // println!("---------");
-    //
-    // for x in broken_gates {
-    //     println!("{}", x);
-    // }
-    //
-    // println!("---------");
-    //
-    // for x in input.gates {
-    //     println!("{}", x);
-    // }<
-    //
-    // let mut result = ["qdg", "z12", "vvf", "z19", "fgn", "dck", "z37", "nvh"];
-    // result.sort();
-    // result.join(",")
-
     (
         input.gates.into_iter().chain(broken_gates).collect(),
         adders,
     )
 }
-
-
-
 
 #[derive(Default, Debug)]
 struct HalfAdder<'a> {
@@ -425,7 +403,11 @@ impl<'a> From<&'a [String]> for Input<'a> {
 }
 
 impl<'a> Input<'a> {
-    fn gate(&mut self, id: usize) -> &mut Gate<'a> {
+    fn gate_mut(&mut self, id: usize) -> &mut Gate<'a> {
         self.gates.iter_mut().find(|g| g.id == id).unwrap()
+    }
+
+    fn gate(&self, id: usize) -> &Gate<'a> {
+        self.gates.iter().find(|g| g.id == id).unwrap()
     }
 }
