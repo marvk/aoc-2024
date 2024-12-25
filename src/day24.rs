@@ -127,8 +127,6 @@ impl Part<String> for Part2 {
                 }
             }
         }
-
-        println!("{:?}", good_swaps);
         
         let mut best_count = usize::MAX;
         let mut best_swaps = [0; 4];
