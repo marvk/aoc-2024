@@ -2,7 +2,6 @@ use crate::harness::Day;
 use crate::harness::Part;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
-use std::mem::swap;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 pub fn day24() -> Day<u64, String> {
@@ -127,7 +126,7 @@ impl Part<String> for Part2 {
                 }
             }
         }
-        
+
         let mut best_count = usize::MAX;
         let mut best_swaps = [0; 4];
 
@@ -156,7 +155,11 @@ impl Part<String> for Part2 {
             }
         }
 
-        let mut broken = best_swaps.into_iter().map(|i| good_swaps[i]).flat_map(|(a, b)| [input.gate(a).result, input.gate(b).result]).collect::<Vec<_>>();
+        let mut broken = best_swaps
+            .into_iter()
+            .map(|i| good_swaps[i])
+            .flat_map(|(a, b)| [input.gate(a).result, input.gate(b).result])
+            .collect::<Vec<_>>();
         broken.sort();
         broken.join(",")
     }

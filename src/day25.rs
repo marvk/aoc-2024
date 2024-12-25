@@ -1,6 +1,6 @@
 use crate::harness::Day;
 use crate::harness::Part;
-use std::ops::{BitOr, Shl};
+use std::ops::{BitAnd, BitOr, Shl};
 
 pub fn day25() -> Day<u32, ()> {
     Day::new(25, Box::new(Part1 {}), Box::new(Part2 {}))
@@ -20,9 +20,7 @@ impl Part<u32> for Part1 {
 
         for lock in &input.locks {
             for key in &input.keys {
-                if key.fits(lock) {
-                    result += 1;
-                }
+                result += key.fits(lock) as u32;
             }
         }
 
@@ -39,10 +37,7 @@ impl Part<()> for Part2 {
 }
 
 #[derive(Debug)]
-struct Schematic {
-    pattern: u32,
-    ones: u32,
-}
+struct Schematic(u32);
 
 impl From<&[String]> for Schematic {
     fn from(value: &[String]) -> Self {
@@ -50,22 +45,16 @@ impl From<&[String]> for Schematic {
             .iter()
             .flat_map(|s| s.chars())
             .enumerate()
-            .map(|(i, c)| if c == '#' { 1_u32.shl(i) } else { 0 })
-            .reduce(|a, b| a.bitor(b))
-            .unwrap();
+            .map(|(i, c)| ((c == '#') as u32).shl(i))
+            .fold(0, |a, b| a.bitor(b));
 
-        let ones = pattern.count_ones();
-        
-        Self {
-            pattern,
-            ones,
-        }
+        Self(pattern)
     }
 }
 
 impl Schematic {
     fn fits(&self, rhs: &Schematic) -> bool {
-        self.pattern.bitor(rhs.pattern).count_ones() == self.ones + rhs.ones
+        self.0.bitand(rhs.0) == 0
     }
 }
 
@@ -79,11 +68,11 @@ impl From<&[String]> for Input {
         let mut locks = vec![];
         let mut keys = vec![];
 
-        for x in value.split(|e| e.is_empty()).filter(|s| !s.is_empty()) {
-            if x[0].contains('#') {
-                locks.push(x.into());
+        for e in value.split(|s| s.is_empty()).filter(|e| !e.is_empty()) {
+            if e[0].starts_with('#') {
+                locks.push(e.into());
             } else {
-                keys.push(x.into());
+                keys.push(e.into());
             }
         }
 
